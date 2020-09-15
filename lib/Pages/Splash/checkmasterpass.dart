@@ -95,7 +95,6 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
 
   @override
   Widget build(BuildContext context) {
-
     Size size1 = MediaQuery.of(context).size;
 
     return Column(
@@ -113,7 +112,10 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
             duration: Duration(milliseconds: 300),
             child: Text(
               hello[lang],
-              style: Theme.of(context).primaryTextTheme.headline1,
+              style: Theme.of(context)
+                  .primaryTextTheme
+                  .headline1
+                  .copyWith(fontSize: size.width * 0.12),
             ),
           ),
         ),
@@ -130,7 +132,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
-                  .copyWith(fontSize: size1.height * 0.046),
+                  .copyWith(fontSize: size.width * 0.087),
               textAlign: TextAlign.center,
             ),
           ),
@@ -165,7 +167,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
                 style: Theme.of(context)
                     .primaryTextTheme
                     .headline2
-                    .copyWith(fontSize: 25),
+                    .copyWith(fontSize: size.width * 0.057),
                 onTap: () {
                   setState(() {
                     active = true;
@@ -202,7 +204,8 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
                       .primaryTextTheme
                       .headline2
                       .copyWith(
-                          fontSize: size1.height * 0.03, color: Colors.white.withOpacity(0.6)),
+                          fontSize: size.width * 0.057,
+                          color: Colors.white.withOpacity(0.6)),
                 ),
               ),
             ),
@@ -214,7 +217,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
           height: (text == '') ? size.height * 0.14 : size.height * 0.07,
           alignment: Alignment.center,
           child: FlatButton(
-            onPressed: (){
+            onPressed: () {
               saveEncryptedPass(null);
             },
             color: Colors.white30,
@@ -246,7 +249,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
               child: Text(
                 text,
                 style: Theme.of(context).primaryTextTheme.headline2.copyWith(
-                      fontSize: 22,
+                      fontSize: size.width * 0.047,
                       color: Colors.red,
                     ),
                 textAlign: TextAlign.center,

@@ -98,7 +98,7 @@ class _PasswordListState extends State<PasswordList> {
                             .headline2
                             .copyWith(
                                 color: Colors.white,
-                                fontSize: size.height * 0.04),
+                                fontSize: size.width * 0.076),
                       )),
                   Container(
                     height: size.width * 0.07,
@@ -133,7 +133,7 @@ class _PasswordListState extends State<PasswordList> {
                       child: Text(
                         '${loading[lang]}...',
                         style: Theme.of(context).primaryTextTheme.headline2.copyWith(
-                            fontSize: size.height * 0.027,
+                            fontSize: size.width * 0.051,
                             color: Colors.black.withOpacity(0.5)),
                       ),
                     ),
@@ -224,7 +224,7 @@ class _PassListState extends State<PassList> {
           child: Text(
             noPass[lang],
             style: Theme.of(context).primaryTextTheme.headline2.copyWith(
-                fontSize: size.height * 0.027,
+                fontSize: size.width * 0.051,
                 color: Colors.black.withOpacity(0.5)),
           ),
         ),

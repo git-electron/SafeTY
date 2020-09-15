@@ -80,7 +80,10 @@ class _SetThemeState extends State<SetTheme> {
         Container(
           child: Text(
             nice[lang],
-            style: Theme.of(context).primaryTextTheme.headline1,
+            style: Theme.of(context)
+                .primaryTextTheme
+                .headline1
+                .copyWith(fontSize: size.width * 0.12),
           ),
         ),
         AnimatedContainer(
@@ -96,7 +99,7 @@ class _SetThemeState extends State<SetTheme> {
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
-                  .copyWith(fontSize: size.height * 0.05),
+                  .copyWith(fontSize: size.width * 0.095),
               textAlign: TextAlign.center,
             ),
           ),

@@ -90,7 +90,10 @@ class _SetLanguageState extends State<SetLanguage>
                 child: Center(
                   child: Text(
                     hello[lang],
-                    style: Theme.of(context).primaryTextTheme.headline1,
+                    style: Theme.of(context)
+                        .primaryTextTheme
+                        .headline1
+                        .copyWith(fontSize: size.width * 0.12),
                   ),
                 ),
               ),
@@ -106,7 +109,7 @@ class _SetLanguageState extends State<SetLanguage>
                         style: Theme.of(context)
                             .primaryTextTheme
                             .headline1
-                            .copyWith(fontSize: size.height * 0.05),
+                            .copyWith(fontSize: size.width * 0.095),
                         textAlign: TextAlign.center,
                         softWrap: true,
                       ),
@@ -125,7 +128,7 @@ class _SetLanguageState extends State<SetLanguage>
                         style: Theme.of(context)
                             .primaryTextTheme
                             .headline1
-                            .copyWith(fontSize: size.height * 0.05),
+                            .copyWith(fontSize: size.width * 0.095),
                         textAlign: TextAlign.center,
                         softWrap: true,
                       ),
@@ -164,8 +167,7 @@ class _SetLanguageState extends State<SetLanguage>
                         duration: Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
                         height: size.height * 0.09,
-                        width:
-                            !rus ? size.width * 0.8 : size.height * 0.085,
+                        width: !rus ? size.width * 0.8 : size.height * 0.085,
                         decoration: BoxDecoration(
                           borderRadius:
                               BorderRadius.circular(size.height * 0.1 / 2),
@@ -193,8 +195,8 @@ class _SetLanguageState extends State<SetLanguage>
                                       size.height * 0.1 / 2),
                                   color: Colors.white,
                                   image: DecorationImage(
-                                    image: AssetImage(
-                                        'assets/images/english.png'),
+                                    image:
+                                        AssetImage('assets/images/english.png'),
                                     fit: BoxFit.cover,
                                   )),
                             ),
@@ -206,7 +208,7 @@ class _SetLanguageState extends State<SetLanguage>
                                     .primaryTextTheme
                                     .headline1
                                     .copyWith(
-                                        fontSize: size.height * 0.05,
+                                        fontSize: size.width * 0.095,
                                         fontWeight: !rus
                                             ? FontWeight.w300
                                             : FontWeight.w200))
@@ -264,8 +266,8 @@ class _SetLanguageState extends State<SetLanguage>
                                       size.height * 0.1 / 2),
                                   color: Colors.white,
                                   image: DecorationImage(
-                                    image: AssetImage(
-                                        'assets/images/russian.png'),
+                                    image:
+                                        AssetImage('assets/images/russian.png'),
                                     fit: BoxFit.cover,
                                   )),
                             ),
@@ -277,7 +279,7 @@ class _SetLanguageState extends State<SetLanguage>
                                     .primaryTextTheme
                                     .headline1
                                     .copyWith(
-                                        fontSize: size.height * 0.05,
+                                        fontSize: size.width * 0.095,
                                         fontWeight: rus
                                             ? FontWeight.w300
                                             : FontWeight.w200))

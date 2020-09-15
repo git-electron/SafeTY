@@ -128,7 +128,10 @@ class _SetMasterPassState extends State<SetMasterPass> {
         Container(
           child: Text(
             awesome[lang],
-            style: Theme.of(context).primaryTextTheme.headline1,
+            style: Theme.of(context)
+                .primaryTextTheme
+                .headline1
+                .copyWith(fontSize: size.width * 0.12),
           ),
         ),
         AnimatedContainer(
@@ -144,7 +147,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
-                  .copyWith(fontSize: size.height * 0.046),
+                  .copyWith(fontSize: size.width * 0.087),
               textAlign: TextAlign.center,
               softWrap: true,
             ),
@@ -163,7 +166,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
-                  .copyWith(fontSize: size.height * 0.046),
+                  .copyWith(fontSize: size.width * 0.087),
               textAlign: TextAlign.center,
               softWrap: true,
             ),
@@ -200,7 +203,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
                 style: Theme.of(context)
                     .primaryTextTheme
                     .headline2
-                    .copyWith(fontSize: size.height * 0.03),
+                    .copyWith(fontSize: size.width * 0.057),
                 onTap: () {
                   setState(() {
                     active1 = true;
@@ -245,7 +248,8 @@ class _SetMasterPassState extends State<SetMasterPass> {
                       .primaryTextTheme
                       .headline2
                       .copyWith(
-                          fontSize: size.height * 0.03, color: Colors.white.withOpacity(0.6)),
+                          fontSize: size.width * 0.057,
+                          color: Colors.white.withOpacity(0.6)),
                 ),
               ),
             ),
@@ -282,7 +286,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
                 style: Theme.of(context)
                     .primaryTextTheme
                     .headline2
-                    .copyWith(fontSize: size.height * 0.03),
+                    .copyWith(fontSize: size.width * 0.057),
                 onTap: () {
                   setState(() {
                     active2 = true;
@@ -324,7 +328,8 @@ class _SetMasterPassState extends State<SetMasterPass> {
                       .primaryTextTheme
                       .headline2
                       .copyWith(
-                          fontSize: size.height * 0.03, color: Colors.white.withOpacity(0.6)),
+                          fontSize: size.width * 0.057,
+                          color: Colors.white.withOpacity(0.6)),
                 ),
               ),
             ),
@@ -348,7 +353,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
               child: Text(
                 text,
                 style: Theme.of(context).primaryTextTheme.headline2.copyWith(
-                      fontSize: size.height * 0.025,
+                      fontSize: size.width * 0.047,
                       color: Colors.red,
                     ),
                 textAlign: TextAlign.center,

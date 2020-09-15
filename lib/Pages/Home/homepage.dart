@@ -83,7 +83,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Container(
-              height: size.height * 0.08,
+              width: size.width * 0.675,
               child: ShaderMask(
                 blendMode: BlendMode.srcATop,
                 shaderCallback: (Rect bounds) {
@@ -182,7 +182,7 @@ class _HomePageState extends State<HomePage> {
                                 .headline2
                                 .copyWith(
                                     color: buttonColor[theme],
-                                    fontSize: size.height * 0.037),
+                                    fontSize: size.width * 0.07),
                           ),
                         ),
                       ],
@@ -254,7 +254,7 @@ class _HomePageState extends State<HomePage> {
                                 .headline2
                                 .copyWith(
                                     color: buttonColor[theme],
-                                    fontSize: size.height * 0.037),
+                                    fontSize: size.width * 0.07),
                           ),
                         ),
                       ],
