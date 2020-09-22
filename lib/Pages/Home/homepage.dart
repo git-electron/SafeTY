@@ -58,6 +58,12 @@ class _HomePageState extends State<HomePage> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
+        AnimatedContainer(
+          alignment: Alignment.topCenter,
+          duration: Duration(milliseconds: 700),
+          curve: Curves.easeInOut,
+          height: container ? size.height * 0 : size.height * 0.3,
+        ),
         Stack(
           alignment: FractionalOffset(0.5, 0.7),
           children: [
@@ -228,12 +234,12 @@ class _HomePageState extends State<HomePage> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: <Widget>[
                         Icon(
-                          CustomIcons.perspective_dice_random,
-                          size: size.width * 0.1,
+                          CustomIcons.dice,
+                          size: size.width * 0.09,
                           color: buttonColor[theme],
                         ),
                         SizedBox(
-                          width: size.width * 0.025,
+                          width: size.width * 0.035,
                         ),
                         ShaderMask(
                           blendMode: BlendMode.srcATop,

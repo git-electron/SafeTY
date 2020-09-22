@@ -77,7 +77,8 @@ void encryptPass(String pass) async {
   final cryptor = new PlatformStringCryptor();
   final String key = await cryptor.generateKeyFromPassword(pass, 'salt');
 
-  print(key);
+  decryptKey = key;
+  print('Key to encrypt/decrypt passwords: $key');
 
   final String encrypted = await cryptor.encrypt(pass, key);
 
@@ -89,11 +90,10 @@ void encryptPass(String pass) async {
 }
 
 Future<bool> decryptPass(String pass) async {
-
   String encrypted;
   bool matches = false;
 
-  getEncryptedPass().then((value){
+  getEncryptedPass().then((value) {
     encrypted = value;
   });
 
@@ -101,7 +101,8 @@ Future<bool> decryptPass(String pass) async {
 
   final String key = await cryptor.generateKeyFromPassword(pass, 'salt');
 
-  print(key);
+  decryptKey = key;
+  print('Key to encrypt/decrypt passwords: $key');
 
   try {
     final String decrypted = await cryptor.decrypt(encrypted, key);
@@ -109,11 +110,58 @@ Future<bool> decryptPass(String pass) async {
     print(decrypted);
     print('[v] > Password matches');
     matches = true;
-
   } catch (e) {
     print('[x] > Cannot login. Exception:\n');
     print(e);
   }
 
   return matches;
+}
+
+Future<List<String>> encryptCell(List cellToEncrypt) async {
+  String title = cellToEncrypt[0];
+  String pass = cellToEncrypt[1];
+  String username = cellToEncrypt[2];
+  String link = cellToEncrypt[3];
+
+  String key = decryptKey;
+
+  final cryptor = new PlatformStringCryptor();
+
+  final String encryptedPass = await cryptor.encrypt(pass, key);
+  final String encryptedUsername = await cryptor.encrypt(username, key);
+  final String encryptedLink = await cryptor.encrypt(link, key);
+
+  List<String> encryptedCell = [
+    title,
+    encryptedPass,
+    encryptedUsername,
+    encryptedLink
+  ];
+
+  return encryptedCell;
+}
+
+Future<List<String>> decryptCell(List cellToDecrypt) async {
+  String title = cellToDecrypt[0];
+  String encryptedPass = cellToDecrypt[1];
+  String encryptedUsername = cellToDecrypt[2];
+  String encryptedLink = cellToDecrypt[3];
+
+  String key = decryptKey;
+
+  final cryptor = new PlatformStringCryptor();
+
+  final String pass = await cryptor.decrypt(encryptedPass, key);
+  final String username = await cryptor.decrypt(encryptedUsername, key);
+  final String link = await cryptor.decrypt(encryptedLink, key);
+
+  List<String> decryptedCell = [
+    title,
+    pass,
+    username,
+    link
+  ];
+
+  return decryptedCell;
 }

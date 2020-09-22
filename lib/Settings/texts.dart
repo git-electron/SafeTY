@@ -1,6 +1,8 @@
 //main
 var hello = ['Привет', 'Hello'];
 var greetings = ['Спасибо, что используешь это приложение', 'Thank you for using\nthis app'];
+var searchField = ['поиск', 'search'];
+var copied = ['Скопировано', 'Copied'];
 
 //check masterpass
 var enterPass = ['Введи свой мастер-пароль', 'Enter your masterpass'];
@@ -36,3 +38,32 @@ var incorrectPass = ['Неверный пароль', 'Incorrect password'];
 //home page
 var manager = ['Менеджер паролей', 'Password manager'];
 var generator = ['Генератор паролей', 'Password generator'];
+
+//password add page
+var addNew = ['ДОБАВИТЬ\nПАРОЛЬ', 'ADD NEW\nPASSWORD'];
+var titleField = ['Название', 'Title'];
+var passField = ['Пароль', 'Password'];
+var usernameField = ['Никнейм', 'Username'];
+var linkField = ['Ссылка', 'Link'];
+var emptyTitle = ['Введи название', 'Set the title'];
+var emptyPass = ['Введи пароль', 'Set your password'];
+
+//password view page
+var viewPass = ['ПРОСМОТР\nПАРОЛЯ', 'VIEW\nPASSWORD'];
+
+//delete password
+var sure = ['Ты уверен? Это навсегда', "Are you sure? It's permanent"];
+
+//edit password
+var editPage = ['ИЗМЕНЕНИЕ\nПАРОЛЯ', 'EDIT\nPASSWORD'];
+
+//exceptions
+var launchException = ['Невозможно открыть ссылку', 'Could not launch url'];
+var emptyUrlException = ['Ссылка пуста', 'Empty url'];
+
+//settings
+var settingsTitle = ['НАСТРОЙКИ', 'SETTINGS'];
+var appearance = ['Оформление', 'Appearance'];
+var language = ['Язык', 'Language'];
+var masterPassSettings = ['Мастер-пароль', 'Masterpass'];
+var other = ['Прочее', 'Other'];

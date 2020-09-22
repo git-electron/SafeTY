@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 import 'package:flutter_string_encryption/flutter_string_encryption.dart';
 import 'package:circular_reveal_animation/circular_reveal_animation.dart';
 
@@ -101,8 +102,16 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
   AnimationController rotateController;
   AnimationController logoController;
 
-  void initState() {
+  Future<void> initPlatformState() async {
+    await FlutterStatusbarManager.setTranslucent(true);
+
+    return;
+  }
+
+  void initState(){
     super.initState();
+
+    initPlatformState();
 
     getEncryptedPass().then((value) {
       print(value);

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 ThemeData lightTheme = ThemeData(
-  primaryColor: Colors.white,
+  primaryColor: Color.fromRGBO(230, 230, 230, 1),
   primaryTextTheme: TextTheme(
     headline1: TextStyle(
       color: Colors.white,
@@ -11,6 +11,21 @@ ThemeData lightTheme = ThemeData(
       color: Colors.white,
       fontSize: 30,
       fontWeight: FontWeight.w500
+    ),
+  ),
+);
+
+ThemeData darkTheme = ThemeData(
+  primaryColor: Color.fromRGBO(20, 20, 20, 1),
+  primaryTextTheme: TextTheme(
+    headline1: TextStyle(
+      color: Colors.white,
+      fontSize: 50, //22 = size.height * 0.025; 25 = size.height * 0.03; 30 = size.height * 0.037; 40 = size.height * 0.05; 50 = size.height * 0.062
+    ),
+    headline2: TextStyle(
+        color: Colors.white,
+        fontSize: 30,
+        fontWeight: FontWeight.w500
     ),
   ),
 );
@@ -31,6 +46,16 @@ var transition = false;
 var first = true;
 
 var page = 0;
+
+var decryptKey = '';
+
+var passData;
+
+String searchData = '';
+
+var obscure = true;
+
+var id;
 
 //vars
 
@@ -61,3 +86,4 @@ var buttonColor = [
   Colors.pinkAccent,
   Color.fromRGBO(120, 255, 140, 1),
 ];
+var bgColor = [Color.fromRGBO(230, 230, 230, 1), Color.fromRGBO(30, 30, 30, 1)];

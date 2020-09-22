@@ -32,6 +32,10 @@ dependencies:
   circular_reveal_animation: ^1.1.5
   flutter_animated_theme: ^0.9.0
   flutter_screenutil: ^2.3.0
+  flutter_statusbar_manager : ^2.0.0
+  animated_text_kit: ^2.2.0
+  draggable_flutter_list: ^1.0.3
+  fluttertoast: ^7.1.1
 
 dev_dependencies:
   flutter_test:
