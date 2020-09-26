@@ -5,7 +5,7 @@
 How serious are you about security? If you use similar password for all of your accounts, or your passwords is too short/does not contains numbers and special symbols/are frequently used, your accounts are under the threat of hacking.
 
 # Main functions
-*[x]App will help you to generate secure password
+* [x] App will help you to generate secure password
 * [x]All passwords stores encrypted by AES technology
 * [x]The encryption key generates from master password
 * [x]Master password and key does not stores in database
