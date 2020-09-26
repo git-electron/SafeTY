@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:safety/Functions.dart';
 
 import 'package:safety/Settings/texts.dart';
@@ -93,7 +94,7 @@ class _SetLanguageState extends State<SetLanguage>
                     style: Theme.of(context)
                         .primaryTextTheme
                         .headline1
-                        .copyWith(fontSize: size.width * 0.12),
+                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.12)),
                   ),
                 ),
               ),
@@ -109,7 +110,7 @@ class _SetLanguageState extends State<SetLanguage>
                         style: Theme.of(context)
                             .primaryTextTheme
                             .headline1
-                            .copyWith(fontSize: size.width * 0.095),
+                            .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.095)),
                         textAlign: TextAlign.center,
                         softWrap: true,
                       ),
@@ -128,7 +129,7 @@ class _SetLanguageState extends State<SetLanguage>
                         style: Theme.of(context)
                             .primaryTextTheme
                             .headline1
-                            .copyWith(fontSize: size.width * 0.095),
+                            .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.095)),
                         textAlign: TextAlign.center,
                         softWrap: true,
                       ),
@@ -208,7 +209,7 @@ class _SetLanguageState extends State<SetLanguage>
                                     .primaryTextTheme
                                     .headline1
                                     .copyWith(
-                                        fontSize: size.width * 0.095,
+                                        fontSize: ScreenUtil().setSp(size.width * 0.095),
                                         fontWeight: !rus
                                             ? FontWeight.w300
                                             : FontWeight.w200))
@@ -279,7 +280,7 @@ class _SetLanguageState extends State<SetLanguage>
                                     .primaryTextTheme
                                     .headline1
                                     .copyWith(
-                                        fontSize: size.width * 0.095,
+                                        fontSize: ScreenUtil().setSp(size.width * 0.095),
                                         fontWeight: rus
                                             ? FontWeight.w300
                                             : FontWeight.w200))

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:safety/Settings/texts.dart';
 import 'package:safety/Settings/themes.dart';
@@ -131,7 +132,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
             style: Theme.of(context)
                 .primaryTextTheme
                 .headline1
-                .copyWith(fontSize: size.width * 0.12),
+                .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.12)),
           ),
         ),
         AnimatedContainer(
@@ -147,7 +148,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
-                  .copyWith(fontSize: size.width * 0.087),
+                  .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.087)),
               textAlign: TextAlign.center,
               softWrap: true,
             ),
@@ -166,7 +167,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
-                  .copyWith(fontSize: size.width * 0.087),
+                  .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.087)),
               textAlign: TextAlign.center,
               softWrap: true,
             ),
@@ -203,7 +204,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
                 style: Theme.of(context)
                     .primaryTextTheme
                     .headline2
-                    .copyWith(fontSize: size.width * 0.057),
+                    .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.057)),
                 onTap: () {
                   setState(() {
                     active1 = true;
@@ -248,7 +249,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
                       .primaryTextTheme
                       .headline2
                       .copyWith(
-                          fontSize: size.width * 0.057,
+                          fontSize: ScreenUtil().setSp(size.width * 0.057),
                           color: Colors.white.withOpacity(0.6)),
                 ),
               ),
@@ -286,7 +287,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
                 style: Theme.of(context)
                     .primaryTextTheme
                     .headline2
-                    .copyWith(fontSize: size.width * 0.057),
+                    .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.057)),
                 onTap: () {
                   setState(() {
                     active2 = true;
@@ -328,7 +329,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
                       .primaryTextTheme
                       .headline2
                       .copyWith(
-                          fontSize: size.width * 0.057,
+                          fontSize: ScreenUtil().setSp(size.width * 0.057),
                           color: Colors.white.withOpacity(0.6)),
                 ),
               ),
@@ -353,7 +354,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
               child: Text(
                 text,
                 style: Theme.of(context).primaryTextTheme.headline2.copyWith(
-                      fontSize: size.width * 0.047,
+                      fontSize: ScreenUtil().setSp(size.width * 0.047),
                       color: Colors.red,
                     ),
                 textAlign: TextAlign.center,

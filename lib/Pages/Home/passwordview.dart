@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:safety/Database/password.dart';
 import 'package:safety/Settings/texts.dart';
@@ -59,7 +60,7 @@ class _PasswordViewState extends State<PasswordView> {
 
     List<String> cellToDecrypt = [cell.title, cell.pass, cell.name, cell.link];
 
-    decryptCell(cellToDecrypt).then((decrypted) {
+    decryptCell(cellToDecrypt, false).then((decrypted) {
       decryptedCell = [decrypted[0], decrypted[1], decrypted[2], decrypted[3]];
 
       setState(() {
@@ -93,7 +94,7 @@ class _PasswordViewState extends State<PasswordView> {
           cell.link
         ];
 
-        decryptCell(cellToDecrypt).then((decrypted) {
+        decryptCell(cellToDecrypt, false).then((decrypted) {
           decryptedCell = [
             decrypted[0],
             decrypted[1],
@@ -143,7 +144,7 @@ class _PasswordViewState extends State<PasswordView> {
         style: Theme.of(context)
             .primaryTextTheme
             .headline2
-            .copyWith(fontSize: size.width * 0.057),
+            .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.057)),
       ),
     );
 
@@ -203,7 +204,7 @@ class _PasswordViewState extends State<PasswordView> {
                       style: Theme.of(context)
                           .primaryTextTheme
                           .headline1
-                          .copyWith(fontSize: size.width * 0.11),
+                          .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.11)),
                     ),
                   ),
                   GestureDetector(
@@ -236,7 +237,7 @@ class _PasswordViewState extends State<PasswordView> {
                           .primaryTextTheme
                           .headline1
                           .copyWith(
-                              fontSize: size.width * 0.08, color: Colors.black),
+                              fontSize: ScreenUtil().setSp(size.width * 0.08), color: blackWhiteColor[dark]),
                     ),
                     Stack(
                       alignment: FractionalOffset(0.5, 0.95),
@@ -267,8 +268,8 @@ class _PasswordViewState extends State<PasswordView> {
                               .primaryTextTheme
                               .headline2
                               .copyWith(
-                                  fontSize: size.width * 0.057,
-                                  color: Colors.black.withOpacity(0.6)),
+                                  fontSize: ScreenUtil().setSp(size.width * 0.057),
+                                  color: blackWhiteColor[dark].withOpacity(0.6)),
                           decoration: InputDecoration(
                             border: InputBorder.none,
                           ),
@@ -293,7 +294,7 @@ class _PasswordViewState extends State<PasswordView> {
                           .primaryTextTheme
                           .headline1
                           .copyWith(
-                              fontSize: size.width * 0.08, color: Colors.black),
+                              fontSize: ScreenUtil().setSp(size.width * 0.08), color: blackWhiteColor[dark]),
                     ),
                     Stack(
                       alignment: FractionalOffset(0.5, 0.95),
@@ -331,8 +332,8 @@ class _PasswordViewState extends State<PasswordView> {
                                     .primaryTextTheme
                                     .headline2
                                     .copyWith(
-                                        fontSize: size.width * 0.057,
-                                        color: Colors.black.withOpacity(0.6)),
+                                        fontSize: ScreenUtil().setSp(size.width * 0.057),
+                                        color: blackWhiteColor[dark].withOpacity(0.6)),
                                 decoration: InputDecoration(
                                   border: InputBorder.none,
                                 ),
@@ -349,7 +350,7 @@ class _PasswordViewState extends State<PasswordView> {
                                 width: size.width * 0.1,
                                 child: Icon(
                                   obs ? CustomIcons.eye_off : CustomIcons.eye,
-                                  color: Colors.black.withOpacity(0.6),
+                                  color: blackWhiteColor[dark].withOpacity(0.6),
                                 ),
                               ),
                             ),
@@ -366,7 +367,7 @@ class _PasswordViewState extends State<PasswordView> {
                                 width: size.width * 0.1,
                                 child: Icon(
                                   CustomIcons.docs,
-                                  color: Colors.black.withOpacity(0.6),
+                                  color: blackWhiteColor[dark].withOpacity(0.6),
                                 ),
                               ),
                             ),
@@ -392,7 +393,7 @@ class _PasswordViewState extends State<PasswordView> {
                           .primaryTextTheme
                           .headline1
                           .copyWith(
-                              fontSize: size.width * 0.08, color: Colors.black),
+                              fontSize: ScreenUtil().setSp(size.width * 0.08), color: blackWhiteColor[dark]),
                     ),
                     Stack(
                       alignment: FractionalOffset(0.5, 0.95),
@@ -429,8 +430,8 @@ class _PasswordViewState extends State<PasswordView> {
                                     .primaryTextTheme
                                     .headline2
                                     .copyWith(
-                                        fontSize: size.width * 0.057,
-                                        color: Colors.black.withOpacity(0.6)),
+                                        fontSize: ScreenUtil().setSp(size.width * 0.057),
+                                        color: blackWhiteColor[dark].withOpacity(0.6)),
                                 decoration: InputDecoration(
                                   border: InputBorder.none,
                                 ),
@@ -449,7 +450,7 @@ class _PasswordViewState extends State<PasswordView> {
                                 width: size.width * 0.1,
                                 child: Icon(
                                   CustomIcons.docs,
-                                  color: Colors.black.withOpacity(0.6),
+                                  color: blackWhiteColor[dark].withOpacity(0.6),
                                 ),
                               ),
                             ),
@@ -475,7 +476,7 @@ class _PasswordViewState extends State<PasswordView> {
                           .primaryTextTheme
                           .headline1
                           .copyWith(
-                              fontSize: size.width * 0.08, color: Colors.black),
+                              fontSize: ScreenUtil().setSp(size.width * 0.08), color: blackWhiteColor[dark]),
                     ),
                     Stack(
                       alignment: FractionalOffset(0.5, 0.95),
@@ -512,8 +513,8 @@ class _PasswordViewState extends State<PasswordView> {
                                     .primaryTextTheme
                                     .headline2
                                     .copyWith(
-                                        fontSize: size.width * 0.057,
-                                        color: Colors.black.withOpacity(0.6)),
+                                        fontSize: ScreenUtil().setSp(size.width * 0.057),
+                                        color: blackWhiteColor[dark].withOpacity(0.6)),
                                 decoration: InputDecoration(
                                   border: InputBorder.none,
                                 ),
@@ -545,7 +546,7 @@ class _PasswordViewState extends State<PasswordView> {
                                 width: size.width * 0.1,
                                 child: Icon(
                                   CustomIcons.link_ext,
-                                  color: Colors.black.withOpacity(0.6),
+                                  color: blackWhiteColor[dark].withOpacity(0.6),
                                 ),
                               ),
                             ),

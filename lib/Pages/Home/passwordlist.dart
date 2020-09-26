@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:safety/Database/DBHelper.dart';
 import 'package:safety/Database/password.dart';
@@ -39,7 +40,7 @@ class _PasswordListState extends State<PasswordList> {
       _searchController.text = searchData;
     });
 
-    if(searchData != ''){
+    if (searchData != '') {
       setState(() {
         search = true;
       });
@@ -119,7 +120,7 @@ class _PasswordListState extends State<PasswordList> {
                                 .headline2
                                 .copyWith(
                                   color: Colors.white,
-                                  fontSize: size.width * 0.076,
+                                  fontSize: ScreenUtil().setSp(size.width * 0.076),
                                 ),
                           )),
                       search
@@ -138,7 +139,7 @@ class _PasswordListState extends State<PasswordList> {
                                 height: size.width * 0.07,
                                 width: size.width * 0.07,
                                 child: Icon(
-                                  CustomIcons.search_1,
+                                  CustomIcons.search,
                                   color: topRightColor[theme],
                                   size: size.width * 0.07,
                                 ),
@@ -171,18 +172,19 @@ class _PasswordListState extends State<PasswordList> {
                           ]),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: <Widget>[
                           AnimatedContainer(
+                            alignment: Alignment.centerLeft,
                             duration: Duration(milliseconds: 100),
                             height: size.height * 0.07,
                             width: search ? size.width * 0.75 : 0,
                             child: TextField(
-                              onChanged: (value){
+                              onChanged: (value) {
                                 setState(() {
                                   searchData = value;
                                 });
                               },
-
                               controller: _searchController,
                               autocorrect: false,
                               keyboardType: TextInputType.text,
@@ -191,7 +193,7 @@ class _PasswordListState extends State<PasswordList> {
                                   .primaryTextTheme
                                   .headline2
                                   .copyWith(
-                                      fontSize: size.width * 0.057,
+                                      fontSize: ScreenUtil().setSp(size.width * 0.057),
                                       color: Colors.black.withOpacity(0.6)),
                               cursorColor: Colors.black12,
                               textInputAction: TextInputAction.search,
@@ -204,7 +206,7 @@ class _PasswordListState extends State<PasswordList> {
                                       .primaryTextTheme
                                       .headline2
                                       .copyWith(
-                                          fontSize: size.width * 0.057,
+                                          fontSize: ScreenUtil().setSp(size.width * 0.057),
                                           color:
                                               Colors.black.withOpacity(0.4))),
                             ),
@@ -262,8 +264,8 @@ class _PasswordListState extends State<PasswordList> {
                             .primaryTextTheme
                             .headline2
                             .copyWith(
-                                fontSize: size.width * 0.051,
-                                color: Colors.black.withOpacity(0.5)),
+                                fontSize: ScreenUtil().setSp(size.width * 0.051),
+                                color: blackWhiteColor[dark].withOpacity(0.5)),
                       ),
                     ),
                   );
@@ -495,7 +497,7 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                                     style: Theme.of(context)
                                         .primaryTextTheme
                                         .headline2
-                                        .copyWith(fontSize: size.width * 0.042),
+                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.042)),
                                   ),
                                   SizedBox(
                                     width: size.width * 0.06,
@@ -548,7 +550,7 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
 
                                       setState(() {
                                         colors[i] =
-                                            Color.fromRGBO(230, 230, 230, 1);
+                                            bgColor[dark];
                                       });
 
                                       setState(() {
@@ -696,10 +698,11 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                               borderRadius:
                                   BorderRadius.circular(size.height * 0.01),
-                              color: Color.fromRGBO(230, 230, 230, 1),
+                              color: bgColor[dark],
                               boxShadow: [
                                 BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
+                                    color: buttonBgColor[dark]
+                                        .withOpacity((dark == 1) ? 0.2 : 0.1),
                                     blurRadius: 25,
                                     spreadRadius: 5,
                                     offset: Offset(0, 5))
@@ -719,9 +722,9 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                                         .primaryTextTheme
                                         .headline2
                                         .copyWith(
-                                            fontSize: size.width * 0.065,
-                                            color:
-                                                Colors.black.withOpacity(0.6)),
+                                            fontSize: ScreenUtil().setSp(size.width * 0.065),
+                                            color: blackWhiteColor[dark]
+                                                .withOpacity(0.6)),
                                   ),
                                 ),
                                 Container(
@@ -730,7 +733,8 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                                   child: Icon(
                                     CustomIcons.right_open,
                                     size: size.width * 0.07,
-                                    color: Colors.black.withOpacity(0.6),
+                                    color:
+                                        blackWhiteColor[dark].withOpacity(0.6),
                                   ),
                                 )
                               ]),
@@ -745,7 +749,7 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(
                                 (widths[i] != 0) ? size.height * 0.01 : 0),
-                            color: Color.fromRGBO(230, 230, 230, 1),
+                            color: bgColor[dark],
                           ),
                           child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -762,9 +766,9 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                                         .primaryTextTheme
                                         .headline2
                                         .copyWith(
-                                            fontSize: size.width * 0.065,
-                                            color:
-                                                Colors.black.withOpacity(0.6)),
+                                            fontSize: ScreenUtil().setSp(size.width * 0.065),
+                                            color: blackWhiteColor[dark]
+                                                .withOpacity(0.6)),
                                   ),
                                 ),
                                 Container(
@@ -773,7 +777,8 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                                   child: Icon(
                                     CustomIcons.right_open,
                                     size: size.width * 0.07,
-                                    color: Colors.black.withOpacity(0.6),
+                                    color:
+                                        blackWhiteColor[dark].withOpacity(0.6),
                                   ),
                                 )
                               ]),
@@ -795,8 +800,8 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
           child: Text(
             noPass[lang],
             style: Theme.of(context).primaryTextTheme.headline2.copyWith(
-                fontSize: size.width * 0.051,
-                color: Colors.black.withOpacity(0.5)),
+                fontSize: ScreenUtil().setSp(size.width * 0.051),
+                color: blackWhiteColor[dark].withOpacity(0.5)),
           ),
         ),
       );
@@ -811,13 +816,13 @@ class TopClipper extends CustomClipper<Path> {
 
     path.lineTo(0, s.height);
 
-    var controlPoint1 = Offset(s.width * 1 / 3 - 50, s.height * 0.6);
-    var endPoint1 = Offset(s.width * 1 / 3, s.height * 0.6);
+    var controlPoint1 = Offset(s.width * 1 / 3 - 50, s.height * 0.7);
+    var endPoint1 = Offset(s.width * 1 / 3, s.height * 0.7);
 
     path.quadraticBezierTo(
         controlPoint1.dx, controlPoint1.dy, endPoint1.dx, endPoint1.dy);
 
-    var controlPoint2 = Offset(s.width * 1 / 3 + 50, s.height * 0.6);
+    var controlPoint2 = Offset(s.width * 1 / 3 + 50, s.height * 0.7);
     var endPoint2 = Offset(s.width, s.height);
 
     path.quadraticBezierTo(

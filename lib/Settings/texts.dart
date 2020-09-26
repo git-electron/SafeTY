@@ -1,7 +1,7 @@
 //main
 var hello = ['Привет', 'Hello'];
 var greetings = ['Спасибо, что используешь это приложение', 'Thank you for using\nthis app'];
-var searchField = ['поиск', 'search'];
+var searchField = ['Поиск', 'Search'];
 var copied = ['Скопировано', 'Copied'];
 
 //check masterpass
@@ -14,7 +14,6 @@ var setLanguage = ['Выбери язык приложения', 'Select the app
 var nice = ['Отлично', 'Nice'];
 var nowSetTheme = ['Теперь выбери тему', 'Now select a theme'];
 var setTheme = ['Выбери тему', 'Select a theme'];
-var darkTheme = ['Тёмная тема', 'Dark theme'];
 
 //set masterpass
 var awesome = ['Круто', 'Awesome'];
@@ -67,3 +66,15 @@ var appearance = ['Оформление', 'Appearance'];
 var language = ['Язык', 'Language'];
 var masterPassSettings = ['Мастер-пароль', 'Masterpass'];
 var other = ['Прочее', 'Other'];
+var themeButton = ['Тема', 'Theme'];
+var setDarkTheme = ['Тёмная тема', 'Dark theme'];
+var setLightTheme = ['Светлая тема', 'Light theme'];
+var changeMasterPassButton = ['Сменить мастер-пароль', 'Change masterpass'];
+var donate = ['Поддержать', 'Donate'];
+var about = ['О разработчике', 'About'];
+
+//generator
+var useLetters = ['Использовать буквы', 'Use letters'];
+var useNumbers = ['Использовать цифры', 'Use numbers'];
+var useSymbols = ['Использовать символы', 'Use symbols'];
+var symbolsCount = ['Количество символов', 'Number of characters'];

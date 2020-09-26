@@ -31,11 +31,13 @@ dependencies:
   shared_preferences: ^0.5.10
   circular_reveal_animation: ^1.1.5
   flutter_animated_theme: ^0.9.0
-  flutter_screenutil: ^2.3.0
+  animated_theme_switcher: ^1.0.5
+  flutter_screenutil: ^2.3.1
   flutter_statusbar_manager : ^2.0.0
   animated_text_kit: ^2.2.0
   draggable_flutter_list: ^1.0.3
   fluttertoast: ^7.1.1
+  in_app_purchase: ^0.3.4+9
 
 dev_dependencies:
   flutter_test:
@@ -59,6 +61,7 @@ flutter:
     - assets/images/logo.png
     - assets/images/icon.png
     - assets/images/s.png
+    - assets/images/dev_logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

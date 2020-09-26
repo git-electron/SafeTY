@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:safety/Settings/texts.dart';
 import 'package:safety/Settings/themes.dart';
@@ -83,7 +84,7 @@ class _SetThemeState extends State<SetTheme> {
             style: Theme.of(context)
                 .primaryTextTheme
                 .headline1
-                .copyWith(fontSize: size.width * 0.12),
+                .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.12)),
           ),
         ),
         AnimatedContainer(
@@ -99,7 +100,7 @@ class _SetThemeState extends State<SetTheme> {
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
-                  .copyWith(fontSize: size.width * 0.095),
+                  .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.095)),
               textAlign: TextAlign.center,
             ),
           ),

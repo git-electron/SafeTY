@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:safety/Settings/themes.dart';
 import 'package:safety/Settings/texts.dart';
@@ -48,6 +51,20 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         clip = true;
       });
+    });
+
+    Timer.periodic(Duration(milliseconds: 500), (timer) {
+      if(page == 0){
+        getLangState().then((value) {
+          setState(() {
+            lang = value;
+          });
+        });
+      }
+
+      if(page != 0 && page != 5){
+        timer.cancel();
+      }
     });
   }
 
@@ -123,9 +140,11 @@ class _HomePageState extends State<HomePage> {
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      color1 = Colors.black12;
+                      color1 = buttonBgColor[dark];
 
                       page = 1;
+
+                      list = true;
                     });
 
                     Future.delayed(Duration(milliseconds: 200), () {
@@ -136,7 +155,7 @@ class _HomePageState extends State<HomePage> {
                   },
                   onLongPressStart: (details){
                     setState(() {
-                      color1 = Colors.black12;
+                      color1 = buttonBgColor[dark];
                     });
                   },
                   onLongPressEnd: (details){
@@ -146,7 +165,7 @@ class _HomePageState extends State<HomePage> {
                   },
                   onTapDown: (details){
                     setState(() {
-                      color1 = Colors.black12;
+                      color1 = buttonBgColor[dark];
                     });
                   },
                   child: AnimatedContainer(
@@ -188,7 +207,7 @@ class _HomePageState extends State<HomePage> {
                                 .headline2
                                 .copyWith(
                                     color: buttonColor[theme],
-                                    fontSize: size.width * 0.07),
+                                    fontSize: ScreenUtil().setSp(size.width * 0.07)),
                           ),
                         ),
                       ],
@@ -198,7 +217,11 @@ class _HomePageState extends State<HomePage> {
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      color2 = Colors.black12;
+                      color2 = buttonBgColor[dark];
+
+                      page = 2;
+
+                      list = false;
                     });
 
                     Future.delayed(Duration(milliseconds: 200), () {
@@ -209,7 +232,7 @@ class _HomePageState extends State<HomePage> {
                   },
                   onLongPressStart: (details){
                     setState(() {
-                      color2 = Colors.black12;
+                      color2 = buttonBgColor[dark];
                     });
                   },
                   onLongPressEnd: (details){
@@ -219,7 +242,7 @@ class _HomePageState extends State<HomePage> {
                   },
                   onTapDown: (details){
                     setState(() {
-                      color2 = Colors.black12;
+                      color2 = buttonBgColor[dark];
                     });
                   },
                   child: AnimatedContainer(
@@ -260,7 +283,7 @@ class _HomePageState extends State<HomePage> {
                                 .headline2
                                 .copyWith(
                                     color: buttonColor[theme],
-                                    fontSize: size.width * 0.07),
+                                    fontSize: ScreenUtil().setSp(size.width * 0.07)),
                           ),
                         ),
                       ],

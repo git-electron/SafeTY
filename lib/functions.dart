@@ -41,6 +41,23 @@ Future<int> getThemeState() async {
   return theme;
 }
 
+Future<bool> saveDarkThemeState(int darkThemeState) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  prefs.setInt('dark theme', darkThemeState);
+
+  print(
+      '[v] Dark theme state saved successfully. (state: $darkThemeState)');
+
+  return prefs.commit();
+}
+
+Future<int> getDarkThemeState() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  int darkThemeState = prefs.getInt('dark theme');
+
+  return darkThemeState;
+}
+
 Future<bool> saveEncryptedPass(String pass) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   prefs.setString('pass', pass);
@@ -78,7 +95,8 @@ void encryptPass(String pass) async {
   final String key = await cryptor.generateKeyFromPassword(pass, 'salt');
 
   decryptKey = key;
-  print('Key to encrypt/decrypt passwords: $key');
+  print('\n\nKey to encrypt/decrypt passwords: $key');
+  print('Old key for passwords: $oldDecryptKey\n\n');
 
   final String encrypted = await cryptor.encrypt(pass, key);
 
@@ -125,6 +143,7 @@ Future<List<String>> encryptCell(List cellToEncrypt) async {
   String link = cellToEncrypt[3];
 
   String key = decryptKey;
+  print('Key to encrypt/decrypt passwords: $key');
 
   final cryptor = new PlatformStringCryptor();
 
@@ -139,16 +158,20 @@ Future<List<String>> encryptCell(List cellToEncrypt) async {
     encryptedLink
   ];
 
+  print('encrypted cell with key $key');
+
   return encryptedCell;
 }
 
-Future<List<String>> decryptCell(List cellToDecrypt) async {
+Future<List<String>> decryptCell(List cellToDecrypt, bool decryptWithOldKey) async {
   String title = cellToDecrypt[0];
   String encryptedPass = cellToDecrypt[1];
   String encryptedUsername = cellToDecrypt[2];
   String encryptedLink = cellToDecrypt[3];
 
-  String key = decryptKey;
+  String key = decryptWithOldKey ? oldDecryptKey : decryptKey;
+
+  print('Key to encrypt/decrypt passwords: $key');
 
   final cryptor = new PlatformStringCryptor();
 

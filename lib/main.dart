@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
+import 'package:flutter_animated_theme/animated_theme_app.dart';
+import 'package:flutter_animated_theme/animation_type.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 import 'package:flutter_string_encryption/flutter_string_encryption.dart';
 import 'package:circular_reveal_animation/circular_reveal_animation.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'package:safety/Pages/Splash/checkmasterpass.dart';
 import 'package:safety/Pages/Splash/setlanguage.dart';
@@ -22,21 +25,25 @@ import 'package:safety/custom_icons_icons.dart';
 import 'dart:async';
 
 void main() {
+  InAppPurchaseConnection.enablePendingPurchase;
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light));
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: SplashAnim(),
-    theme: lightTheme,
-    builder: (context, child) {
-      return ScrollConfiguration(
-        behavior: MyBehavior(),
-        child: child,
-      );
-    },
-  ));
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: SplashAnim(),
+      theme: lightTheme,
+      builder: (context, child) {
+        return ScrollConfiguration(
+          behavior: MyBehavior(),
+          child: child,
+        );
+      },
+    ),
+  );
 }
 
 /*
@@ -108,7 +115,7 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
     return;
   }
 
-  void initState(){
+  void initState() {
     super.initState();
 
     initPlatformState();
@@ -142,11 +149,25 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
       }
     });
 
+    getDarkThemeState().then((value) {
+      print(value);
+
+      if (value != null) {
+        setState(() {
+          dark = value;
+        });
+      } else {
+        setState(() {
+          dark = 0;
+        });
+      }
+    });
+
     loadTheme();
 
     setState(() {
       lightTheme = ThemeData(
-        primaryColor: Colors.white,
+        primaryColor: Color.fromRGBO(230, 230, 230, 1),
         primaryTextTheme: TextTheme(
           headline1: TextStyle(
             color: Colors.white,
@@ -155,12 +176,10 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
           headline2: TextStyle(
               color: Colors.white,
               fontSize: size.height * 0.037,
-              fontWeight: FontWeight.w500
-          ),
+              fontWeight: FontWeight.w500),
         ),
       );
     });
-
 
     rotateController = AnimationController(
       vsync: this,
@@ -189,6 +208,10 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
       if (size == Size.zero) {
         size = MediaQuery.of(context).size;
       }
+    });
+
+    Future.delayed(Duration(milliseconds: 150), () {
+      ScreenUtil.init(context, width: size.width, height: size.height, allowFontScaling: false);
     });
 
     Future.delayed(Duration(milliseconds: 1500), () {
@@ -258,7 +281,11 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
           timer.cancel();
 
           Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (BuildContext context) => Home()));
+            PageRouteBuilder(
+              pageBuilder: (c, a1, a2) => Home(),
+              transitionsBuilder: (c, anim, a2, child) => FadeTransition(opacity: anim, child: child),
+              transitionDuration: Duration(milliseconds: 1000),
+            ),);
         });
       }
     });
@@ -319,7 +346,7 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
 
     return Scaffold(
       resizeToAvoidBottomPadding: true,
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor[dark],
       body: Stack(
         alignment: Alignment.topCenter,
         children: [
@@ -503,7 +530,7 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
                   child: Container(
                     height: size.height,
                     width: size.width,
-                    color: Colors.white,
+                    color: bgColor[dark],
                   ),
                 )
               : SizedBox(),

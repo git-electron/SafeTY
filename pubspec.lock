@@ -8,6 +8,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.2.0"
+  animated_theme_switcher:
+    dependency: "direct main"
+    description:
+      name: animated_theme_switcher
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.7"
   archive:
     dependency: transitive
     description:
@@ -149,6 +156,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.1.4"
+  in_app_purchase:
+    dependency: "direct main"
+    description:
+      name: in_app_purchase
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.4+9"
   intl:
     dependency: transitive
     description:
@@ -156,6 +170,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.16.1"
+  json_annotation:
+    dependency: transitive
+    description:
+      name: json_annotation
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.1.0"
   matcher:
     dependency: transitive
     description:

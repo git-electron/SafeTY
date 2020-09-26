@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:safety/Settings/texts.dart';
 import 'package:safety/Settings/themes.dart';
@@ -96,6 +97,8 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
   @override
   Widget build(BuildContext context) {
     Size size1 = MediaQuery.of(context).size;
+    ScreenUtil.init(context,
+        height: size.height, width: size.width, allowFontScaling: false);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -115,7 +118,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
-                  .copyWith(fontSize: size.width * 0.12),
+                  .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.12)),
             ),
           ),
         ),
@@ -132,7 +135,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
-                  .copyWith(fontSize: size.width * 0.087),
+                  .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.087)),
               textAlign: TextAlign.center,
             ),
           ),
@@ -167,7 +170,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
                 style: Theme.of(context)
                     .primaryTextTheme
                     .headline2
-                    .copyWith(fontSize: size.width * 0.057),
+                    .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.057)),
                 onTap: () {
                   setState(() {
                     active = true;
@@ -204,7 +207,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
                       .primaryTextTheme
                       .headline2
                       .copyWith(
-                          fontSize: size.width * 0.057,
+                          fontSize: ScreenUtil().setSp(size.width * 0.057),
                           color: Colors.white.withOpacity(0.6)),
                 ),
               ),
@@ -215,21 +218,6 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
           duration: Duration(milliseconds: 200),
           curve: Curves.easeInOut,
           height: (text == '') ? size.height * 0.14 : size.height * 0.07,
-          alignment: Alignment.center,
-          child: FlatButton(
-            onPressed: () {
-              saveEncryptedPass(null);
-            },
-            color: Colors.white30,
-            child: Text(
-              '[Temporary]\nClear password',
-              style: Theme.of(context)
-                  .primaryTextTheme
-                  .headline2
-                  .copyWith(fontSize: 22),
-              textAlign: TextAlign.center,
-            ),
-          ),
         ),
         AnimatedContainer(
           duration: Duration(milliseconds: 200),
@@ -249,7 +237,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
               child: Text(
                 text,
                 style: Theme.of(context).primaryTextTheme.headline2.copyWith(
-                      fontSize: size.width * 0.047,
+                      fontSize: ScreenUtil().setSp(size.width * 0.047),
                       color: Colors.red,
                     ),
                 textAlign: TextAlign.center,

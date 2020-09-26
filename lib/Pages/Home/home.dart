@@ -4,16 +4,19 @@ import 'dart:math';
 import 'package:circular_reveal_animation/circular_reveal_animation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:safety/Database/DBHelper.dart';
 import 'package:safety/Database/password.dart';
 
 import 'package:safety/Pages/Home/homepage.dart';
+import 'package:safety/Pages/Home/passwordgenerator.dart';
 import 'package:safety/Pages/Home/passwordlist.dart';
 import 'package:safety/Pages/Home/passwordview.dart';
 import 'package:safety/Settings/settings.dart';
 import 'package:safety/Settings/themes.dart';
 import 'package:safety/Settings/texts.dart';
 import 'package:safety/Utils/fieldFocusChange.dart';
+import 'package:safety/Utils/generator.dart';
 import 'package:safety/custom_icons_icons.dart';
 import 'package:safety/functions.dart';
 
@@ -145,7 +148,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
     Timer.periodic(Duration(milliseconds: 500), (timer) {
       setState(() {
-        if(!settingsState){
+        if (!settingsState) {
           top = MediaQuery.of(context).size.height * 0.8;
         }
       });
@@ -154,11 +157,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         pageController.animateToPage(0,
             duration: Duration(milliseconds: 400), curve: Curves.easeInOut);
 
-        if(!settingsState){
+        if (!settingsState) {
           rotateController.forward();
         }
 
         setState(() {
+          alignment = 0.8;
+
           settings = true;
           edit = false;
           add1 = false;
@@ -175,6 +180,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         rotateController.reverse();
 
         setState(() {
+          alignment = 0.8;
+
           settings = false;
           edit = false;
           add1 = true;
@@ -186,11 +193,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       }
 
       if (page == 2) {
-        pageController.animateToPage(2,
+        pageController.animateToPage(1,
             duration: Duration(milliseconds: 400), curve: Curves.easeInOut);
         rotateController.reverse();
 
         setState(() {
+          alignment = 0.5;
+
           settings = false;
           edit = false;
           add1 = false;
@@ -205,6 +214,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         rotateController.reverse();
 
         setState(() {
+          alignment = 0.8;
+
           settings = false;
           edit = true;
           add1 = false;
@@ -215,6 +226,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
       if (page == 5) {
         rotateController.forward(from: 0.0);
+
+        colorAnimation =
+            ColorTween(begin: Colors.white, end: buttonColor[theme])
+                .animate(colorController);
+
+        getLangState().then((value) {
+          setState(() {
+            lang = value;
+
+            titleHint = titleField[lang];
+            passHint = passField[lang];
+          });
+        });
 
         setState(() {
           page = 0;
@@ -229,19 +253,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           logo = true;
         });
 
-        Future.delayed(Duration(milliseconds: 200), (){
+        Future.delayed(Duration(milliseconds: 200), () {
           setState(() {
             managerButton = true;
           });
         });
 
-        Future.delayed(Duration(milliseconds: 300), (){
+        Future.delayed(Duration(milliseconds: 300), () {
           setState(() {
             generatorButton = true;
           });
         });
 
-        Future.delayed(Duration(milliseconds: 500), (){
+        Future.delayed(Duration(milliseconds: 500), () {
           setState(() {
             settingsState = false;
           });
@@ -251,6 +275,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   void addPassFromList() {
+    setState(() {
+      _titleController.text = '';
+      _passController.text = '';
+      _usernameController.text = '';
+      _linkController.text = '';
+    });
+
     animationController.forward();
     rotateController.forward();
     colorController.forward();
@@ -258,6 +289,49 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     setState(() {
       animate = true;
       addPassword = true;
+
+      page = 3;
+      left = 0;
+    });
+
+    Future.delayed(Duration(milliseconds: 800), () {
+      setState(() {
+        firstField = true;
+      });
+    });
+    Future.delayed(Duration(milliseconds: 900), () {
+      setState(() {
+        secondField = true;
+      });
+    });
+    Future.delayed(Duration(milliseconds: 1000), () {
+      setState(() {
+        thirdField = true;
+      });
+    });
+    Future.delayed(Duration(milliseconds: 1100), () {
+      setState(() {
+        forthField = true;
+      });
+    });
+
+    Future.delayed(Duration(milliseconds: 700), () {
+      setState(() {
+        canSave = true;
+      });
+    });
+  }
+
+  void addPassFromGenerator() {
+    animationController.forward();
+    rotateController.forward();
+    colorController.forward();
+
+    setState(() {
+      animate = true;
+      addPassword = true;
+
+      _passController.text = generated;
 
       page = 3;
       left = 0;
@@ -301,7 +375,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     List<String> cellToDecrypt = [cell.title, cell.pass, cell.name, cell.link];
     List<String> decryptedCell = [];
 
-    decryptCell(cellToDecrypt).then((decrypted) {
+    decryptCell(cellToDecrypt, false).then((decrypted) {
       decryptedCell = [decrypted[0], decrypted[1], decrypted[2], decrypted[3]];
 
       setState(() {
@@ -336,7 +410,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     });
   }
 
-  void openSettings(){
+  void openSettings() {
     rotateController.reverse(from: 1.0);
 
     setState(() {
@@ -344,52 +418,66 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       top = size.height;
     });
 
-    Future.delayed(Duration(milliseconds: 100), (){
+    Future.delayed(Duration(milliseconds: 100), () {
       setState(() {
         generatorButton = false;
       });
     });
 
-    Future.delayed(Duration(milliseconds: 200), (){
+    Future.delayed(Duration(milliseconds: 200), () {
       setState(() {
         managerButton = false;
       });
     });
 
-    Future.delayed(Duration(milliseconds: 300), (){
+    Future.delayed(Duration(milliseconds: 300), () {
       setState(() {
         logo = false;
       });
     });
 
-    Future.delayed(Duration(milliseconds: 700), (){
+    Future.delayed(Duration(milliseconds: 700), () {
       setState(() {
         settingsPage = true;
       });
     });
   }
 
-  void close(bool update) {
+  void close(bool update, bool noChanges) {
     animationController.reverse();
     rotateController.reverse();
     colorController.reverse();
 
-    setState(() {
-      alignment = 0.8;
-
-      left = size.width * 0.6;
-
-      obscure = obs;
-    });
-
-    if (update) {
+    if(list){
       setState(() {
-        page = 4;
+        alignment = 0.8;
+
+        left = size.width * 0.6;
+
+        obscure = obs;
       });
+
+      if (update) {
+        setState(() {
+          page = 4;
+        });
+      } else {
+        setState(() {
+          page = 1;
+        });
+      }
     } else {
-      setState(() {
-        page = 1;
-      });
+      if(!noChanges){
+        setState(() {
+          alignment = 0.8;
+
+          left = size.width * 0.6;
+
+          list = true;
+
+          page = 1;
+        });
+      }
     }
 
     Future.delayed(Duration(milliseconds: 700), () {
@@ -460,7 +548,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           await db.savePass(password);
           print('saved');
 
-          close(false);
+          close(false, false);
         });
       }
     });
@@ -497,7 +585,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             _linkController.text = cell[3];
           });
 
-          close(true);
+          close(true, false);
         });
       }
     });
@@ -540,13 +628,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     Size size1 = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: bgColor[dark],
       body: Stack(
         alignment: Alignment.topCenter,
         children: <Widget>[
           Container(
             height: size.height,
             width: size.width,
-            color: Color.fromRGBO(230, 230, 230, 1),
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 700),
+              height: size.height,
+              width: size.width,
+              color: bgColor[dark],
+            ),
           ),
           Container(
             height: size.height,
@@ -562,7 +656,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 ),
                 ListView(
                   children: [
-                    PasswordList(),
+                    (list) ? PasswordList() : PasswordGenerator(),
                   ],
                 ),
                 ListView(
@@ -573,62 +667,85 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               ],
             ),
           ),
-          settingsState ? Container(
-            height: size.height,
-            width: size1.width,
-            child: Stack(
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    AnimatedOpacity(
-                      duration: Duration(milliseconds: 300),
-                      opacity: logo ? 0 : 1,
-                      child: Container(
-                        height: settingsState ? size.height * 0.45 : 0,
-                        width: size1.width,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    ),
-                    AnimatedOpacity(
-                      duration: Duration(milliseconds: 300),
-                      opacity: managerButton ? 0 : 1,
-                      child: Container(
-                        height: settingsState ? size.height * 0.1 : 0,
-                        width: size1.width,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    ),
-                    AnimatedOpacity(
-                      duration: Duration(milliseconds: 300),
-                      opacity: generatorButton ? 0 : 1,
-                      child: Container(
-                        height: settingsState ? size.height * 0.1 : 0,
-                        width: size1.width,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-                AnimatedOpacity(
-                  duration: Duration(milliseconds: 300),
-                  opacity: logo ? 0 : 1,
-                  child: Container(
-                    height: size.height,
-                    width: size1.width,
-                    padding: EdgeInsets.fromLTRB(size.width * 0.04, size.width * 0.08,
-                        size.width * 0.04, size.width * 0.08),
-                    child: ListView(
-                      children: <Widget>[
-                        Settings(),
+          settingsState
+              ? Stack(
+                  children: [
+                    ListView(
+                      children: [
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: <Widget>[
+                            AnimatedOpacity(
+                              duration: Duration(milliseconds: 300),
+                              opacity: logo ? 0 : 1,
+                              child: Container(
+                                height: settingsState ? size.height * 0.45 : 0,
+                                width: size1.width,
+                                child: AnimatedContainer(
+                                  duration: Duration(milliseconds: 700),
+                                  height: size.height * 0.45,
+                                  width: size1.width,
+                                  color: bgColor[dark],
+                                ),
+                              ),
+                            ),
+                            AnimatedOpacity(
+                              duration: Duration(milliseconds: 300),
+                              opacity: managerButton ? 0 : 1,
+                              child: Container(
+                                height: settingsState ? size.height * 0.1 : 0,
+                                child: AnimatedContainer(
+                                  duration: Duration(milliseconds: 700),
+                                  height: size.height * 0.1,
+                                  width: size1.width,
+                                  color: bgColor[dark],
+                                ),
+                              ),
+                            ),
+                            AnimatedOpacity(
+                              duration: Duration(milliseconds: 300),
+                              opacity: generatorButton ? 0 : 1,
+                              child: Container(
+                                height: settingsState ? size.height * 0.1 : 0,
+                                child: AnimatedContainer(
+                                  duration: Duration(milliseconds: 700),
+                                  height: size.height * 0.1,
+                                  width: size1.width,
+                                  color: bgColor[dark],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ) : SizedBox(),
+                    ListView(
+                      physics: NeverScrollableScrollPhysics(),
+                      children: [
+                        AnimatedOpacity(
+                          duration: Duration(milliseconds: 300),
+                          opacity: logo ? 0 : 1,
+                          child: Container(
+                            height: size.height,
+                            width: size1.width,
+                            padding: EdgeInsets.fromLTRB(
+                                size.width * 0.04,
+                                size.width * 0.08,
+                                size.width * 0.04,
+                                size.width * 0.04),
+                            child: ListView(
+                              children: [
+                                Settings(),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              : SizedBox(),
           animate
               ? Container(
                   height: size.height,
@@ -675,14 +792,18 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                   style: Theme.of(context)
                                       .primaryTextTheme
                                       .headline1
-                                      .copyWith(fontSize: size.width * 0.11),
+                                      .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.11)),
                                 ),
                                 GestureDetector(
                                   onTap: () {
-                                    if (updatePassword) {
-                                      close(true);
+                                    if(list){
+                                      if (updatePassword) {
+                                        close(true, false);
+                                      } else {
+                                        close(false, false);
+                                      }
                                     } else {
-                                      close(false);
+                                      close(false, true);
                                     }
                                   },
                                   child: Container(
@@ -710,7 +831,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                     style: Theme.of(context)
                                         .primaryTextTheme
                                         .headline1
-                                        .copyWith(fontSize: size.width * 0.08),
+                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
                                   ),
                                   Stack(
                                     alignment: FractionalOffset(0.5, 0.95),
@@ -777,7 +898,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                             .primaryTextTheme
                                             .headline2
                                             .copyWith(
-                                                fontSize: size.width * 0.057),
+                                                fontSize: ScreenUtil().setSp(size.width * 0.057)),
                                         decoration: InputDecoration(
                                             border: InputBorder.none,
                                             hintText: titleHint,
@@ -786,7 +907,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                                 .headline2
                                                 .copyWith(
                                                     fontSize:
-                                                        size.width * 0.057,
+                                                    ScreenUtil().setSp(size.width * 0.057),
                                                     color: color1
                                                         .withOpacity(0.6))),
                                       ),
@@ -809,7 +930,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                     style: Theme.of(context)
                                         .primaryTextTheme
                                         .headline1
-                                        .copyWith(fontSize: size.width * 0.08),
+                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
                                   ),
                                   Stack(
                                     alignment: FractionalOffset(0.5, 0.95),
@@ -878,7 +999,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                             .primaryTextTheme
                                             .headline2
                                             .copyWith(
-                                                fontSize: size.width * 0.057),
+                                                fontSize: ScreenUtil().setSp(size.width * 0.057)),
                                         decoration: InputDecoration(
                                           suffixIcon: IconButton(
                                             icon: Icon(
@@ -899,7 +1020,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                               .primaryTextTheme
                                               .headline2
                                               .copyWith(
-                                                  fontSize: size.width * 0.057,
+                                                  fontSize: ScreenUtil().setSp(size.width * 0.057),
                                                   color:
                                                       color2.withOpacity(0.6)),
                                         ),
@@ -923,7 +1044,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                     style: Theme.of(context)
                                         .primaryTextTheme
                                         .headline1
-                                        .copyWith(fontSize: size.width * 0.08),
+                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
                                   ),
                                   Stack(
                                     alignment: FractionalOffset(0.5, 0.95),
@@ -987,7 +1108,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                             .primaryTextTheme
                                             .headline2
                                             .copyWith(
-                                                fontSize: size.width * 0.057),
+                                                fontSize: ScreenUtil().setSp(size.width * 0.057)),
                                         decoration: InputDecoration(
                                             border: InputBorder.none,
                                             hintText: active3
@@ -998,7 +1119,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                                 .headline2
                                                 .copyWith(
                                                     fontSize:
-                                                        size.width * 0.057,
+                                                    ScreenUtil().setSp(size.width * 0.057),
                                                     color: Colors.white
                                                         .withOpacity(0.6))),
                                       ),
@@ -1021,7 +1142,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                     style: Theme.of(context)
                                         .primaryTextTheme
                                         .headline1
-                                        .copyWith(fontSize: size.width * 0.08),
+                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
                                   ),
                                   Stack(
                                     alignment: FractionalOffset(0.5, 0.95),
@@ -1081,7 +1202,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                             .primaryTextTheme
                                             .headline2
                                             .copyWith(
-                                                fontSize: size.width * 0.057),
+                                                fontSize: ScreenUtil().setSp(size.width * 0.057)),
                                         decoration: InputDecoration(
                                             border: InputBorder.none,
                                             hintText:
@@ -1091,7 +1212,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                                                 .headline2
                                                 .copyWith(
                                                     fontSize:
-                                                        size.width * 0.057,
+                                                    ScreenUtil().setSp(size.width * 0.057),
                                                     color: Colors.white
                                                         .withOpacity(0.6))),
                                       ),
@@ -1169,6 +1290,9 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         if (add1 && !addPassword) {
                           addPassFromList();
                         }
+                        if (add2 && !addPassword) {
+                          addPassFromGenerator();
+                        }
                         if (addPassword) {
                           if (canSave) {
                             savePass();
@@ -1182,7 +1306,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                             editPass();
                           }
                         }
-                        if (settings && !settingsState){
+                        if (settings && !settingsState) {
                           openSettings();
                         }
                       },
