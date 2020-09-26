@@ -1,21 +1,40 @@
-# safety
+![SafeTY](assets/images/footer.png)
 
-A new Flutter application.
+#SafeTY - Open-Source Password Manager & Generator
 
-## Getting Started
+How serious are you about security? If you use similar password for all of your accounts, or your passwords is too short/does not contains numbers and special symbols/are frequently used, your accounts are under the threat of hacking.
 
-This project is a starting point for a Flutter application.
+#Main functions
+* [x]App will help you to generate secure password
+* [x]All passwords stores encrypted by AES technology
+* [x]The encryption key generates from master password
+* [x]Master password and key does not stores in database
+* [x]You can add username and link to your password
 
-A few resources to get you started if this is your first Flutter project:
+#Some features
+* [x]Nice design
+* [x]Great animations
+* [x]6 colored themes
+* [x]Light/dark theme
+* [x]2 languages (for translation issues: electron.devf@gmail.com)
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+#Soon...
+* Forms autofill on some sites
+* Server support to store passwords in the cloud
+* New languages
+* Bug fixes
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-"# SafeTY" 
-"# SafeTY" 
-"# SafeTY" 
-"# SafeTY" 
-"# SafeTY" 
+#Screenshots
+
+
+<img src="assets/images/screen1.jpg" width="200px" height="411px" />
+<img src="assets/images/screen3.jpg" width="200px" height="411px" />
+<img src="assets/images/screen2.jpg" width="200px" height="411px" />
+<img src="assets/images/screen4.jpg" width="200px" height="411px" />
+<img src="assets/images/screen5.jpg" width="200px" height="411px" />
+
+#Links
+
+Download SafeTY:
+* from Google Play (soon)
+* from F-Droid (soon)
