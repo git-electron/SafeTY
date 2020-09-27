@@ -62,7 +62,7 @@ Future<bool> saveEncryptedPass(String pass) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   prefs.setString('pass', pass);
 
-  print('[v] Decrypted pass saved successfully. (value: $pass)');
+  print('[v] Encrypted pass saved successfully. (value: $pass)');
 
   return prefs.commit();
 }
@@ -72,6 +72,38 @@ Future<String> getEncryptedPass() async {
   String pass = prefs.getString('pass');
 
   return pass;
+}
+
+Future<bool> saveLoginState(bool logged) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  prefs.setBool('login state', logged);
+
+  print('[v] Login state saved successfully. (value: $logged)');
+
+  return prefs.commit();
+}
+
+Future<bool> getLoginState() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool logged = prefs.getBool('login state');
+
+  return logged;
+}
+
+Future<bool> saveEmail(String mail) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  prefs.setString('email', mail);
+
+  print('[v] Mail saved successfully. (value: $mail)');
+
+  return prefs.commit();
+}
+
+Future<String> getEmail() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String mail = prefs.getString('email');
+
+  return mail;
 }
 
 //Shared Preferences <---

@@ -20,6 +20,15 @@ var awesome = ['Круто', 'Awesome'];
 var setPass = ['Теперь придумай мастер-пароль', 'Now create your masterpass'];
 var aboutPass = ['Ты будешь применять его для входа', 'You will use it to login'];
 
+//set email
+var wantToRegister = ['Хочешь синхронизировать свою базу с облаком?', 'Do you want to sync your database with the cloud?'];
+var yes = ['Да', 'Yes'];
+var no = ['Нет', 'No'];
+var enterEmail = ['Введи свою почту', 'Enter your e-mail'];
+var emailField = ['Почта', 'E-mail'];
+var enterValidEmail = ['Введи существующую почту', 'Enter a valid email'];
+var canSkip = ['Ты можешь пропустить этот шаг', 'You can skip his step'];
+
 //masterpass main
 var masterPassField = ['Мастер-пароль', 'Masterpass'];
 var repeatField = ['Повтори еще раз', 'Repeat again'];
@@ -70,8 +79,17 @@ var themeButton = ['Тема', 'Theme'];
 var setDarkTheme = ['Тёмная тема', 'Dark theme'];
 var setLightTheme = ['Светлая тема', 'Light theme'];
 var changeMasterPassButton = ['Сменить мастер-пароль', 'Change masterpass'];
+var cloud = ['Облако', 'Cloud'];
+var signInButton = ['Войти', 'Sign in'];
+var signOutButton = ['Выйти', 'Sign out'];
+var backupButton = ['Загрузить на сервер', 'Backup'];
+var syncButton = ['Синхронизировать', 'Sync'];
 var donate = ['Поддержать', 'Donate'];
 var about = ['О разработчике', 'About'];
+
+//cloud storage
+var verifyEmail = ['На указанную почту отправлено письмо с подтверждением', 'A confirmation email was sent to the specified mail'];
+var couldNotSignIn = ['Невозможно войти', 'Could not sign in'];
 
 //generator
 var useLetters = ['Использовать буквы', 'Use letters'];

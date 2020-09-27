@@ -1,12 +1,17 @@
 import 'dart:async';
 
-import 'package:animated_theme_switcher/animated_theme_switcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_string_encryption/flutter_string_encryption.dart';
 import 'package:safety/Database/DBHelper.dart';
 import 'package:safety/Database/password.dart';
 import 'package:safety/Settings/texts.dart';
+import 'package:safety/Utils/auth.dart';
+import 'package:safety/Utils/models/user.dart';
+import 'package:safety/Database/cloud.dart';
 
 import 'package:safety/Settings/themes.dart';
 import 'package:safety/Utils/fieldFocusChange.dart';
@@ -30,17 +35,22 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   bool pressed4 = false;
   bool pressed5 = false;
   bool pressed6 = false;
+  bool pressed7 = false;
+  bool pressed8 = false;
+  bool pressed9 = false;
   bool themeSelect = false;
   bool languageSelect = false;
   bool changePass = false;
   bool donateWindow = false;
   bool aboutWindow = false;
+  bool signInField = false;
 
   bool selection = false;
   bool langSelection = false;
   bool passChanging = false;
   bool donating = false;
   bool aboutInfo = false;
+  bool signingIn = false;
 
   bool rus = false;
   bool buttons = false;
@@ -56,6 +66,9 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   bool finished = false;
 
   bool passChanged = false;
+
+  bool loggedIn = false;
+  bool anim = false;
 
   double width1 = size.width * 0.75;
   double width2 = size.width * 0.75;
@@ -76,16 +89,26 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   AnimationController color2Controller;
 
   AnimationController rotateController;
+  AnimationController rotateController1;
 
   final _oldMasterPassController = TextEditingController();
   final _newMasterPassController = TextEditingController();
   final _repeatMasterPassController = TextEditingController();
 
+  final _emailController = TextEditingController();
+  final _masterPassController = TextEditingController();
+
   final FocusNode _firstFocus = FocusNode();
   final FocusNode _secondFocus = FocusNode();
   final FocusNode _thirdFocus = FocusNode();
 
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _masterPassFocus = FocusNode();
+
   final db = DBHelper();
+
+  final AuthService _auth = AuthService();
+  final DatabaseService _database = DatabaseService();
 
   void initState() {
     super.initState();
@@ -118,7 +141,24 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
       }
     });
 
+    getLoginState().then((value) {
+      if (value != null) {
+        setState(() {
+          loggedIn = value;
+          anim = value;
+        });
+      } else {
+        setState(() {
+          loggedIn = false;
+        });
+      }
+    });
+
     rotateController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 500),
+    );
+    rotateController1 = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 500),
     );
@@ -203,6 +243,34 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
       setState(() {
         text = enterMasterPass[lang];
         color1 = Colors.red;
+        finished = true;
+      });
+    }
+
+    print(text);
+  }
+
+  void checkMasterPassWhenSignUp() {
+    if (_masterPassController.text != '') {
+      decryptPass(_masterPassController.text).then((value) {
+        if (value) {
+          print('Success');
+          setState(() {
+            text = '';
+            finished = true;
+          });
+        } else {
+          setState(() {
+            text = incorrectPass[lang];
+            color2 = Colors.red;
+            finished = true;
+          });
+        }
+      });
+    } else {
+      setState(() {
+        text = enterMasterPass[lang];
+        color2 = Colors.red;
         finished = true;
       });
     }
@@ -304,7 +372,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
 
       Future.delayed(Duration(milliseconds: 1000), () {
         setState(() {
-          pressed1 = true;
+          pressed4 = true;
           passChanging = false;
           changePass = false;
         });
@@ -312,7 +380,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
 
       Future.delayed(Duration(milliseconds: 1300), () {
         setState(() {
-          pressed1 = false;
+          pressed4 = false;
         });
       });
 
@@ -326,6 +394,34 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
           _repeatMasterPassController.text = '';
         });
       });
+    });
+  }
+
+  void backup () async {
+    int i = 0;
+
+    User user = await _auth.getUser();
+    List<Map<String, dynamic>> passwords = [];
+
+    db.getPass().then((value) async {
+      while (i < value.length) {
+        Password password = value[i];
+
+        Map<String, dynamic> cell = {
+          'title': password.title,
+          'pass': password.pass,
+          'name': password.name,
+          'link': password.link,
+          'sortDate': password.sortDate,
+        };
+
+        passwords.add(cell);
+
+        i++;
+      }
+
+      print(passwords);
+      _database.updateUserData(passwords, user.uid);
     });
   }
 
@@ -399,9 +495,10 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                     fontSize: ScreenUtil().setSp(size.width * 0.08),
                     color: color2Animation.value),
               ),
-              Container(
-                padding: EdgeInsets.only(
-                    top: size.height * 0.01, bottom: size.height * 0.01),
+              AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                height: themeSelect ? size.height * 0.62 : size.height * 0.12,
                 width: size1.width,
                 alignment: Alignment.center,
                 child: GestureDetector(
@@ -946,9 +1043,11 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                     fontSize: ScreenUtil().setSp(size.width * 0.08),
                     color: color2Animation.value),
               ),
-              Container(
-                padding: EdgeInsets.only(
-                    top: size.height * 0.01, bottom: size.height * 0.01),
+              AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                height:
+                    languageSelect ? size.height * 0.47 : size.height * 0.12,
                 width: size1.width,
                 alignment: Alignment.center,
                 child: GestureDetector(
@@ -1275,9 +1374,10 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                     fontSize: ScreenUtil().setSp(size.width * 0.08),
                     color: color2Animation.value),
               ),
-              Container(
-                padding: EdgeInsets.only(
-                    top: size.height * 0.01, bottom: size.height * 0.01),
+              AnimatedContainer(
+                duration: Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                height: changePass ? size.height * 0.82 : size.height * 0.12,
                 width: size1.width,
                 alignment: Alignment.center,
                 child: GestureDetector(
@@ -1291,6 +1391,18 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                     if (passChanging) {
                       setState(() {
                         passChanging = false;
+
+                        active1 = false;
+                        width1 = size.width * 0.75;
+                        color1 = Colors.white;
+                        active2 = false;
+                        width2 = size.width * 0.75;
+                        color3 = Colors.white;
+                        active3 = false;
+                        width3 = size.width * 0.75;
+                        color3 = Colors.white;
+
+                        text = '';
                       });
                     } else {
                       Future.delayed(Duration(milliseconds: 300), () {
@@ -1328,6 +1440,18 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                     if (passChanging) {
                       setState(() {
                         passChanging = false;
+
+                        active1 = false;
+                        width1 = size.width * 0.75;
+                        color1 = Colors.white;
+                        active2 = false;
+                        width2 = size.width * 0.75;
+                        color3 = Colors.white;
+                        active3 = false;
+                        width3 = size.width * 0.75;
+                        color3 = Colors.white;
+
+                        text = '';
                       });
                     } else {
                       Future.delayed(Duration(milliseconds: 300), () {
@@ -1808,44 +1932,82 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                 height: size.height * 0.05,
               ),
               Text(
-                other[lang],
+                cloud[lang],
                 style: Theme.of(context).primaryTextTheme.headline1.copyWith(
                     fontSize: ScreenUtil().setSp(size.width * 0.08),
                     color: color2Animation.value),
               ),
-              Container(
-                padding: EdgeInsets.only(
-                    top: size.height * 0.01, bottom: size.height * 0.01),
+              AnimatedContainer(
+                duration: Duration(milliseconds: loggedIn ? 100 : 300),
+                curve: Curves.easeInOut,
+                height: signInField ? size.height * 0.67 : size.height * 0.12,
                 width: size1.width,
                 alignment: Alignment.center,
                 child: GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     setState(() {
                       pressed5 = true;
-
-                      donateWindow = !donateWindow;
                     });
 
-                    if (donating) {
+                    if (!loggedIn) {
                       setState(() {
-                        donating = false;
+                        signInField = !signInField;
                       });
+
+                      if (signingIn) {
+                        setState(() {
+                          signingIn = false;
+
+                          active1 = false;
+                          width1 = size.width * 0.75;
+                          color1 = Colors.white;
+                          active2 = false;
+                          width2 = size.width * 0.75;
+                          color3 = Colors.white;
+                          active3 = false;
+                          width3 = size.width * 0.75;
+                          color3 = Colors.white;
+
+                          text = '';
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            signingIn = true;
+                          });
+                        });
+                      }
                     } else {
+                      dynamic result = await _auth.signOut();
+
+                      print(result);
+
+                      if (result == null) {
+                        print('can not to log out');
+                      } else {
+                        print('logged out');
+                        setState(() {
+                          loggedIn = false;
+                          saveLoginState(false);
+                        });
+                      }
+
                       Future.delayed(Duration(milliseconds: 300), () {
                         setState(() {
-                          donating = true;
+                          anim = false;
                         });
                       });
                     }
 
-                    Future.delayed(Duration(milliseconds: 300), () {
+                    Future.delayed(Duration(milliseconds: anim ? 200 : 300),
+                        () {
                       setState(() {
                         pressed5 = false;
                       });
                     });
                   },
                   onTapDown: (details) {
-                    if (!donating) {
+                    if (!signingIn) {
                       setState(() {
                         pressed5 = true;
                       });
@@ -1859,6 +2021,709 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                   onLongPressEnd: (details) {
                     setState(() {
                       pressed5 = true;
+                    });
+
+                    if (!loggedIn) {
+                      setState(() {
+                        signInField = !signInField;
+                      });
+
+                      if (signingIn) {
+                        setState(() {
+                          signingIn = false;
+
+                          active1 = false;
+                          width1 = size.width * 0.75;
+                          color1 = Colors.white;
+                          active2 = false;
+                          width2 = size.width * 0.75;
+                          color3 = Colors.white;
+                          active3 = false;
+                          width3 = size.width * 0.75;
+                          color3 = Colors.white;
+
+                          text = '';
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            signingIn = true;
+                          });
+                        });
+                      }
+                    }
+
+                    Future.delayed(Duration(milliseconds: anim ? 200 : 300),
+                        () {
+                      setState(() {
+                        pressed5 = false;
+                      });
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: anim ? 100 : 300),
+                    curve: Curves.easeInOut,
+                    height: signInField
+                        ? size.height * 0.65
+                        : (pressed5
+                            ? size.height * 0.1 - size.width * 0.02
+                            : size.height * 0.1),
+                    width: pressed5
+                        ? size1.width * 0.92 - size.width * 0.02
+                        : size1.width * 0.92,
+                    child: AnimatedContainer(
+                      padding: EdgeInsets.only(
+                          left: size.width * 0.04, right: size.width * 0.04),
+                      alignment: Alignment.topCenter,
+                      height: size.height * 0.1,
+                      width: size1.width,
+                      duration: Duration(milliseconds: 700),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(size.height * 0.02),
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomLeft,
+                          end: Alignment.topRight,
+                          colors: [
+                            loggedIn ? bottomLeftColor[2] : bottomLeftColor[1],
+                            loggedIn ? topRightColor[2] : topRightColor[1]
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        children: <Widget>[
+                          AnimatedContainer(
+                            duration: Duration(milliseconds: anim ? 100 : 300),
+                            curve: Curves.easeInOut,
+                            alignment: Alignment.centerLeft,
+                            height: pressed5
+                                ? size.height * 0.1 - size.width * 0.02
+                                : size.height * 0.1,
+                            width: size1.width * 0.92,
+                            child: Text(
+                              anim ? signOutButton[lang] : signInButton[lang],
+                              style: Theme.of(context)
+                                  .primaryTextTheme
+                                  .headline1
+                                  .copyWith(
+                                      fontSize:
+                                          ScreenUtil().setSp(size.width * 0.07),
+                                      color: colorAnimation.value),
+                            ),
+                          ),
+                          AnimatedContainer(
+                            alignment: Alignment.center,
+                            duration: Duration(milliseconds: anim ? 100 : 300),
+                            curve: Curves.easeInOut,
+                            height: signInField ? size.height * 0.55 : 0,
+                            child: AnimatedOpacity(
+                              duration: Duration(milliseconds: 500),
+                              opacity: signingIn ? 1 : 0,
+                              child: Container(
+                                height: size.height * 0.50,
+                                width: size1.width,
+                                alignment: Alignment.center,
+                                child: Column(
+                                  children: <Widget>[
+                                    AnimatedContainer(
+                                      padding: EdgeInsets.only(
+                                          left: size.width * 0.05,
+                                          right: size.width * 0.05),
+                                      alignment: Alignment.centerLeft,
+                                      duration: Duration(milliseconds: 500),
+                                      curve: Curves.easeInOut,
+                                      height: size.height * 0.09,
+                                      width: width1,
+                                      decoration: BoxDecoration(
+                                          color: color1
+                                              .withOpacity(active1 ? 0.3 : 0.1),
+                                          borderRadius: BorderRadius.circular(
+                                              size.height * 0.1 / 2),
+                                          border: Border.all(
+                                              color: color1, width: 3)),
+                                      child: TextField(
+                                        focusNode: _emailFocus,
+                                        controller: _emailController,
+                                        autocorrect: false,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        textInputAction: TextInputAction.next,
+                                        enabled: true,
+                                        style: Theme.of(context)
+                                            .primaryTextTheme
+                                            .headline2
+                                            .copyWith(
+                                                fontSize: ScreenUtil()
+                                                    .setSp(size.width * 0.057)),
+                                        onTap: () {
+                                          setState(() {
+                                            active1 = true;
+                                            width1 = size.width * 0.85;
+                                            active2 = false;
+                                            width2 = size.width * 0.75;
+                                          });
+                                        },
+                                        onChanged: (value) {
+                                          color1 = Colors.white;
+                                          color2 = Colors.white;
+
+                                          text = '';
+                                        },
+                                        onSubmitted: (value) {
+                                          fieldFocusChange(context, _emailFocus,
+                                              _masterPassFocus);
+
+                                          setState(() {
+                                            active1 = false;
+                                            width1 = size.width * 0.75;
+                                            active2 = true;
+                                            width2 = size.width * 0.85;
+                                          });
+                                        },
+                                        cursorColor: Colors.white,
+                                        decoration: InputDecoration(
+                                          border: InputBorder.none,
+                                          hintText: emailField[lang],
+                                          hintStyle: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.057),
+                                                  color: Colors.white
+                                                      .withOpacity(0.6)),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: size.height * 0.02,
+                                    ),
+                                    AnimatedContainer(
+                                      padding: EdgeInsets.only(
+                                          left: size.width * 0.05,
+                                          right: size.width * 0.05),
+                                      alignment: Alignment.centerLeft,
+                                      duration: Duration(milliseconds: 500),
+                                      curve: Curves.easeInOut,
+                                      height: size.height * 0.09,
+                                      width: width2,
+                                      decoration: BoxDecoration(
+                                          color: color2
+                                              .withOpacity(active2 ? 0.3 : 0.1),
+                                          borderRadius: BorderRadius.circular(
+                                              size.height * 0.1 / 2),
+                                          border: Border.all(
+                                              color: color2, width: 3)),
+                                      child: TextField(
+                                        focusNode: _masterPassFocus,
+                                        controller: _masterPassController,
+                                        autocorrect: false,
+                                        keyboardType:
+                                            TextInputType.visiblePassword,
+                                        textInputAction: TextInputAction.done,
+                                        obscureText: obs2,
+                                        enabled: true,
+                                        style: Theme.of(context)
+                                            .primaryTextTheme
+                                            .headline2
+                                            .copyWith(
+                                                fontSize: ScreenUtil()
+                                                    .setSp(size.width * 0.057)),
+                                        onTap: () {
+                                          setState(() {
+                                            active1 = false;
+                                            width1 = size.width * 0.75;
+                                            active2 = true;
+                                            width2 = size.width * 0.85;
+                                          });
+                                        },
+                                        onChanged: (value) {
+                                          color1 = Colors.white;
+                                          color2 = Colors.white;
+
+                                          text = '';
+                                        },
+                                        onSubmitted: (value) {
+                                          setState(() {
+                                            active2 = false;
+                                            width2 = size.width * 0.75;
+                                          });
+                                        },
+                                        cursorColor: Colors.white,
+                                        decoration: InputDecoration(
+                                          suffixIcon: IconButton(
+                                            icon: Icon(
+                                              obs2
+                                                  ? CustomIcons.eye_off
+                                                  : CustomIcons.eye,
+                                              color: Colors.white,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                obs2 = !obs2;
+                                              });
+                                            },
+                                          ),
+                                          border: InputBorder.none,
+                                          hintText: masterPassField[lang],
+                                          hintStyle: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.057),
+                                                  color: Colors.white
+                                                      .withOpacity(0.6)),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: size.height * 0.03,
+                                    ),
+                                    AnimatedContainer(
+                                      duration: Duration(milliseconds: 200),
+                                      curve: Curves.easeInOut,
+                                      width: size.width,
+                                      height: (text == '')
+                                          ? size.height * 0.058
+                                          : size.height * 0.108,
+                                      alignment: Alignment.center,
+                                      child: AnimatedOpacity(
+                                        duration: Duration(milliseconds: 200),
+                                        opacity: (text == '') ? 0 : 1,
+                                        child: Container(
+                                          padding: EdgeInsets.fromLTRB(
+                                              size.width * 0.04,
+                                              size.height * 0.008,
+                                              size.width * 0.04,
+                                              size.height * 0.008),
+                                          decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      size.height)),
+                                          child: Text(
+                                            text,
+                                            style: Theme.of(context)
+                                                .primaryTextTheme
+                                                .headline2
+                                                .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.047),
+                                                  color: Colors.red,
+                                                ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: size.height * 0.02,
+                                    ),
+                                    Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        AnimatedContainer(
+                                          duration: Duration(milliseconds: 500),
+                                          curve: Curves.easeInOut,
+                                          height: size.width * 0.25,
+                                          width: size.width * 0.25,
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.bottomLeft,
+                                              end: Alignment.topRight,
+                                              colors: [
+                                                Colors.white.withOpacity(0.5),
+                                                Colors.white.withOpacity(0.5)
+                                              ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                                size.width * 0.25 / 2),
+                                          ),
+                                        ),
+                                        AnimatedContainer(
+                                          duration: Duration(milliseconds: 500),
+                                          curve: Curves.easeInOut,
+                                          height: size.width * 0.2,
+                                          width: size.width * 0.2,
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.bottomLeft,
+                                              end: Alignment.topRight,
+                                              colors: [
+                                                Colors.white,
+                                                Colors.white
+                                              ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                                size.width * 0.2 / 2),
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () async {
+                                            checkMasterPassWhenSignUp();
+
+                                            Timer.periodic(
+                                                Duration(milliseconds: 50),
+                                                (timer) {
+                                              if (finished) {
+                                                setState(() {
+                                                  finished = false;
+                                                });
+                                                Future.delayed(
+                                                    Duration(milliseconds: 100),
+                                                    () async {
+                                                  if (text == '') {
+                                                    dynamic result =
+                                                        await _auth.signIn(
+                                                            _emailController
+                                                                .text,
+                                                            _masterPassController
+                                                                .text);
+
+                                                    print(result);
+
+                                                    print(result);
+
+                                                    if (result == null) {
+                                                      dynamic signUpResult =
+                                                          _auth.signUp(
+                                                              _emailController
+                                                                  .text,
+                                                              _masterPassController
+                                                                  .text);
+
+                                                      Future.delayed(
+                                                          Duration(
+                                                              milliseconds:
+                                                                  100), () {
+                                                        print(signUpResult);
+
+                                                        if (signUpResult ==
+                                                            null) {
+                                                          setState(() {
+                                                            text =
+                                                                couldNotSignIn[
+                                                                    lang];
+                                                          });
+                                                        } else {
+                                                          setState(() {
+                                                            text = verifyEmail[
+                                                                lang];
+                                                          });
+                                                        }
+                                                      });
+                                                    } else {
+                                                      User user =
+                                                          await _auth.getUser();
+
+                                                      if (user.emailVerified) {
+                                                        print(
+                                                            'Signed in successfully');
+                                                        print(result);
+
+                                                        saveLoginState(true);
+                                                        saveEmail(
+                                                            _emailController
+                                                                .text);
+
+                                                        //CLOSING
+
+                                                        rotateController1
+                                                            .forward(from: 0.0);
+                                                        setState(() {
+                                                          loggedIn = true;
+                                                        });
+
+                                                        Future.delayed(
+                                                            Duration(
+                                                                milliseconds:
+                                                                    1000), () {
+                                                          setState(() {
+                                                            pressed5 = true;
+                                                            signingIn = false;
+                                                            signInField = false;
+                                                          });
+                                                        });
+
+                                                        Future.delayed(
+                                                            Duration(
+                                                                milliseconds:
+                                                                    1300), () {
+                                                          setState(() {
+                                                            pressed5 = false;
+                                                          });
+                                                        });
+
+                                                        Future.delayed(
+                                                            Duration(
+                                                                milliseconds:
+                                                                    2000), () {
+                                                          rotateController
+                                                              .reverse(
+                                                                  from: 1.0);
+                                                          setState(() {
+                                                            _emailController
+                                                                .text = '';
+                                                            _masterPassController
+                                                                .text = '';
+                                                            anim = true;
+                                                          });
+                                                        });
+                                                      } else {
+                                                        setState(() {
+                                                          text =
+                                                              verifyEmail[lang];
+                                                        });
+                                                      }
+                                                    }
+                                                  } else {
+                                                    print('Incorrect password');
+                                                  }
+                                                });
+                                              }
+                                            });
+                                          },
+                                          child: Container(
+                                            height: size.width * 0.25,
+                                            width: size.width * 0.25,
+                                            color: Colors.transparent,
+                                            alignment: Alignment.center,
+                                            child: RotationTransition(
+                                              turns: Tween(begin: 0.0, end: 1.0)
+                                                  .animate(rotateController1),
+                                              child: Container(
+                                                child: Stack(
+                                                  alignment: Alignment.center,
+                                                  children: <Widget>[
+                                                    AnimatedOpacity(
+                                                      duration: Duration(
+                                                          milliseconds: 300),
+                                                      opacity: loggedIn ? 0 : 1,
+                                                      child: Icon(
+                                                        CustomIcons.right_open,
+                                                        size: size.width * 0.1,
+                                                        color: buttonColor[1],
+                                                      ),
+                                                    ),
+                                                    AnimatedOpacity(
+                                                      duration: Duration(
+                                                          milliseconds: 300),
+                                                      opacity: loggedIn ? 1 : 0,
+                                                      child: Icon(
+                                                        Icons.done,
+                                                        size: size.width * 0.1,
+                                                        color: buttonColor[2],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                height: size.height * 0.12,
+                width: size1.width,
+                alignment: Alignment.center,
+                child: GestureDetector(
+                  onTap: () async {
+                    if (loggedIn) {
+                      setState(() {
+                        pressed6 = true;
+                      });
+
+                      backup();
+
+                      Future.delayed(Duration(milliseconds: 200), () {
+                        setState(() {
+                          pressed6 = false;
+                        });
+                      });
+                    }
+                  },
+                  onTapDown: (details) {
+                    if (loggedIn) {
+                      setState(() {
+                        pressed6 = true;
+                      });
+                    }
+                  },
+                  onLongPress: () {
+                    if (loggedIn) {
+                      setState(() {
+                        pressed6 = true;
+                      });
+                    }
+                  },
+                  onLongPressEnd: (details) {
+                    if (loggedIn) {
+                      setState(() {
+                        pressed6 = false;
+                      });
+
+                      backup();
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 100),
+                    height: pressed6
+                        ? size.height * 0.1 - size.width * 0.02
+                        : size.height * 0.1,
+                    width: pressed6
+                        ? size1.width * 0.92 - size.width * 0.02
+                        : size1.width * 0.92,
+                    child: AnimatedContainer(
+                      padding: EdgeInsets.only(
+                          left: size.width * 0.04, right: size.width * 0.04),
+                      alignment: Alignment.centerLeft,
+                      height: size.height * 0.1,
+                      width: size1.width,
+                      duration: Duration(milliseconds: 700),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(size.height * 0.02),
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomLeft,
+                          end: Alignment.topRight,
+                          colors: [
+                            loggedIn
+                                ? bottomLeftColor[1]
+                                : Color.fromRGBO(200, 200, 200, 1),
+                            loggedIn
+                                ? topRightColor[1]
+                                : Color.fromRGBO(160, 160, 160, 1)
+                          ],
+                        ),
+                      ),
+                      child: Text(
+                        backupButton[lang],
+                        style: Theme.of(context)
+                            .primaryTextTheme
+                            .headline1
+                            .copyWith(
+                                fontSize: ScreenUtil().setSp(size.width * 0.07),
+                                color: colorAnimation.value),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                height: size.height * 0.12,
+                width: size1.width,
+                alignment: Alignment.center,
+                child: GestureDetector(
+                  onTap: () async {
+                    if (loggedIn) {
+                      setState(() {
+                        pressed7 = true;
+                      });
+
+                      //TODO: SYNC
+
+                      Future.delayed(Duration(milliseconds: 200), () {
+                        setState(() {
+                          pressed7 = false;
+                        });
+                      });
+                    }
+                  },
+                  onTapDown: (details) {
+                    if (loggedIn) {
+                      setState(() {
+                        pressed7 = true;
+                      });
+                    }
+                  },
+                  onLongPress: () {
+                    if (loggedIn) {
+                      setState(() {
+                        pressed7 = true;
+                      });
+                    }
+                  },
+                  onLongPressEnd: (details) {
+                    if (loggedIn) {
+                      setState(() {
+                        pressed7 = false;
+                      });
+
+                      //TODO: SYNC
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 100),
+                    height: pressed7
+                        ? size.height * 0.1 - size.width * 0.02
+                        : size.height * 0.1,
+                    width: pressed7
+                        ? size1.width * 0.92 - size.width * 0.02
+                        : size1.width * 0.92,
+                    child: AnimatedContainer(
+                      padding: EdgeInsets.only(
+                          left: size.width * 0.04, right: size.width * 0.04),
+                      alignment: Alignment.centerLeft,
+                      height: size.height * 0.1,
+                      width: size1.width,
+                      duration: Duration(milliseconds: 700),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(size.height * 0.02),
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomLeft,
+                          end: Alignment.topRight,
+                          colors: [
+                            loggedIn
+                                ? bottomLeftColor[1]
+                                : Color.fromRGBO(200, 200, 200, 1),
+                            loggedIn
+                                ? topRightColor[1]
+                                : Color.fromRGBO(160, 160, 160, 1)
+                          ],
+                        ),
+                      ),
+                      child: Text(
+                        syncButton[lang],
+                        style: Theme.of(context)
+                            .primaryTextTheme
+                            .headline1
+                            .copyWith(
+                            fontSize: ScreenUtil().setSp(size.width * 0.07),
+                            color: colorAnimation.value),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: size.height * 0.05,
+              ),
+              Text(
+                other[lang],
+                style: Theme.of(context).primaryTextTheme.headline1.copyWith(
+                    fontSize: ScreenUtil().setSp(size.width * 0.08),
+                    color: color2Animation.value),
+              ),
+              Container(
+                padding: EdgeInsets.only(
+                    top: size.height * 0.01, bottom: size.height * 0.01),
+                width: size1.width,
+                alignment: Alignment.center,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      pressed9 = true;
 
                       donateWindow = !donateWindow;
                     });
@@ -1877,7 +2742,44 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
 
                     Future.delayed(Duration(milliseconds: 300), () {
                       setState(() {
-                        pressed5 = false;
+                        pressed9 = false;
+                      });
+                    });
+                  },
+                  onTapDown: (details) {
+                    if (!donating) {
+                      setState(() {
+                        pressed9 = true;
+                      });
+                    }
+                  },
+                  onLongPress: () {
+                    setState(() {
+                      pressed9 = true;
+                    });
+                  },
+                  onLongPressEnd: (details) {
+                    setState(() {
+                      pressed9 = true;
+
+                      donateWindow = !donateWindow;
+                    });
+
+                    if (donating) {
+                      setState(() {
+                        donating = false;
+                      });
+                    } else {
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        setState(() {
+                          donating = true;
+                        });
+                      });
+                    }
+
+                    Future.delayed(Duration(milliseconds: 300), () {
+                      setState(() {
+                        pressed9 = false;
                       });
                     });
                   },
@@ -1886,10 +2788,10 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                     curve: Curves.easeInOut,
                     height: donateWindow
                         ? size.height * 0.45
-                        : (pressed5
+                        : (pressed9
                             ? size.height * 0.1 - size.width * 0.02
                             : size.height * 0.1),
-                    width: pressed5
+                    width: pressed9
                         ? size1.width * 0.92 - size.width * 0.02
                         : size1.width * 0.92,
                     child: AnimatedContainer(
@@ -1916,7 +2818,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                             duration: Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
                             alignment: Alignment.centerLeft,
-                            height: pressed5
+                            height: pressed9
                                 ? size.height * 0.1 - size.width * 0.02
                                 : size.height * 0.1,
                             width: size1.width * 0.92,
@@ -1960,7 +2862,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                 child: GestureDetector(
                   onTap: () {
                     setState(() {
-                      pressed6 = true;
+                      pressed9 = true;
 
                       aboutWindow = !aboutWindow;
                     });
@@ -1979,25 +2881,25 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
 
                     Future.delayed(Duration(milliseconds: 300), () {
                       setState(() {
-                        pressed6 = false;
+                        pressed9 = false;
                       });
                     });
                   },
                   onTapDown: (details) {
                     if (!aboutInfo) {
                       setState(() {
-                        pressed6 = true;
+                        pressed9 = true;
                       });
                     }
                   },
                   onLongPress: () {
                     setState(() {
-                      pressed6 = true;
+                      pressed9 = true;
                     });
                   },
                   onLongPressEnd: (details) {
                     setState(() {
-                      pressed6 = true;
+                      pressed9 = true;
 
                       aboutWindow = !aboutWindow;
                     });
@@ -2016,7 +2918,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
 
                     Future.delayed(Duration(milliseconds: 300), () {
                       setState(() {
-                        pressed6 = false;
+                        pressed9 = false;
                       });
                     });
                   },
@@ -2025,10 +2927,10 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                     curve: Curves.easeInOut,
                     height: aboutWindow
                         ? size.height * 1.05
-                        : (pressed6
+                        : (pressed9
                             ? size.height * 0.1 - size.width * 0.02
                             : size.height * 0.1),
-                    width: pressed6
+                    width: pressed9
                         ? size1.width * 0.92 - size.width * 0.02
                         : size1.width * 0.92,
                     child: AnimatedContainer(
@@ -2055,7 +2957,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                             duration: Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
                             alignment: Alignment.centerLeft,
-                            height: pressed6
+                            height: pressed9
                                 ? size.height * 0.1 - size.width * 0.02
                                 : size.height * 0.1,
                             width: size1.width * 0.92,
@@ -2169,7 +3071,8 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                                     ),
                                     GestureDetector(
                                       onTap: () async {
-                                        await launch('https://play.google.com/store/apps/dev?id=6575145471832299540');
+                                        await launch(
+                                            'https://play.google.com/store/apps/dev?id=6575145471832299540');
                                       },
                                       child: Container(
                                         alignment: Alignment.center,
@@ -2198,8 +3101,8 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                                                 .primaryTextTheme
                                                 .headline2
                                                 .copyWith(
-                                                color: blackWhiteColor[dark]
-                                                    .withOpacity(0.6)),
+                                                    color: blackWhiteColor[dark]
+                                                        .withOpacity(0.6)),
                                           ),
                                         ),
                                       ),

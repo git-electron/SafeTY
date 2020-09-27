@@ -1,9 +1,8 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
-import 'package:flutter_animated_theme/animated_theme_app.dart';
-import 'package:flutter_animated_theme/animation_type.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 import 'package:flutter_string_encryption/flutter_string_encryption.dart';
@@ -16,6 +15,7 @@ import 'package:safety/Pages/Splash/settheme.dart';
 import 'package:safety/Pages/Splash/setmasterpass.dart';
 
 import 'package:safety/Pages/Home/home.dart';
+import 'package:safety/Utils/auth.dart';
 import 'package:safety/Utils/scrollConfig.dart';
 import 'package:safety/functions.dart';
 import 'package:safety/Settings/texts.dart';
@@ -24,13 +24,14 @@ import 'package:safety/custom_icons_icons.dart';
 
 import 'dart:async';
 
-void main() {
+void main() async {
   InAppPurchaseConnection.enablePendingPurchase;
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light));
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -45,39 +46,6 @@ void main() {
     ),
   );
 }
-
-/*
-{
-            final cryptor = new PlatformStringCryptor();
-            final String key1 =
-                await cryptor.generateKeyFromPassword(value, 'salt');
-
-            print(key1);
-
-            //final String encrypted = await cryptor.encrypt(value, key)
-
-            final String encrypted = await cryptor.encrypt("value", key1);
-
-            print(encrypted);
-
-            final String key2 =
-                await cryptor.generateKeyFromPassword(value, 'salt');
-
-            print(key2);
-
-            try {
-              final String decrypted = await cryptor.decrypt(
-                  'OKpFkvmpH4/5DSWtIo6rbw==:lZESJBQcec9ITuDYeMR9NQenEp9iyI+B7bxdg7KWLoY=:BHP32DM1o6dy1uTAcQs5gg==',
-                  key2);
-
-              print(decrypted);
-              print('[v] > Password matches');
-            } catch (e) {
-              print('[x] > Cannot login. Exception:\n');
-              print(e);
-            }
-          },
- */
 
 class SplashAnim extends StatefulWidget {
   @override
