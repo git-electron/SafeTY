@@ -34,3 +34,4 @@ How serious are you about security? If you use similar password for all of your 
 Download SafeTY:
 * from Google Play (soon)
 * from F-Droid (soon)
+"# SafeTY" 
