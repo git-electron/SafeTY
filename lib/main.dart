@@ -15,7 +15,7 @@ import 'package:safety/Pages/Splash/settheme.dart';
 import 'package:safety/Pages/Splash/setmasterpass.dart';
 
 import 'package:safety/Pages/Home/home.dart';
-import 'package:safety/Utils/auth.dart';
+import 'file:///E:/Programs/Flutter/Projects/Developing/safety/lib/Cloud/auth.dart';
 import 'package:safety/Utils/scrollConfig.dart';
 import 'package:safety/functions.dart';
 import 'package:safety/Settings/texts.dart';

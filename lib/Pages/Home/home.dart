@@ -92,6 +92,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   var db = DBHelper();
 
+  final Settings _settings = Settings();
+
   void initState() {
     super.initState();
 
@@ -621,771 +623,815 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     return save;
   }
 
+  Future<bool> back() async {
+    if(page == 1){
+      setState(() {
+        page = 0;
+      });
+    }
+    if(page == 2){
+      setState(() {
+        page = 0;
+      });
+    }
+    if(page == 3){
+      if(list){
+        setState(() {
+          page = 1;
+        });
+        if (updatePassword) {
+          close(true, false);
+        } else {
+          close(false, false);
+        }
+      } else {
+        setState(() {
+          page = 2;
+        });
+        close(false, true);
+      }
+    }
+    if(page == 4){
+      setState(() {
+        page = 1;
+      });
+    }
+    if(settings){
+      setState(() {
+        page = 5;
+      });
+    }
+    return false;
+  }
+
   PageController pageController = PageController();
 
   @override
   Widget build(BuildContext context) {
     Size size1 = MediaQuery.of(context).size;
 
-    return Scaffold(
-      backgroundColor: bgColor[dark],
-      body: Stack(
-        alignment: Alignment.topCenter,
-        children: <Widget>[
-          Container(
-            height: size.height,
-            width: size.width,
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 700),
+    return WillPopScope(
+      onWillPop: back,
+      child: Scaffold(
+        backgroundColor: bgColor[dark],
+        body: Stack(
+          alignment: Alignment.topCenter,
+          children: <Widget>[
+            Container(
               height: size.height,
               width: size.width,
-              color: bgColor[dark],
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 700),
+                height: size.height,
+                width: size.width,
+                color: bgColor[dark],
+              ),
             ),
-          ),
-          Container(
-            height: size.height,
-            width: size1.width,
-            child: PageView(
-              physics: NeverScrollableScrollPhysics(),
-              controller: pageController,
-              children: <Widget>[
-                ListView(
-                  children: [
-                    HomePage(),
-                  ],
-                ),
-                ListView(
-                  children: [
-                    (list) ? PasswordList() : PasswordGenerator(),
-                  ],
-                ),
-                ListView(
-                  children: [
-                    PasswordView(),
-                  ],
-                ),
-              ],
+            Container(
+              height: size.height,
+              width: size1.width,
+              child: PageView(
+                physics: NeverScrollableScrollPhysics(),
+                controller: pageController,
+                children: <Widget>[
+                  ListView(
+                    children: [
+                      HomePage(),
+                    ],
+                  ),
+                  ListView(
+                    children: [
+                      (list) ? PasswordList() : PasswordGenerator(),
+                    ],
+                  ),
+                  ListView(
+                    children: [
+                      PasswordView(),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          settingsState
-              ? Stack(
-                  children: [
-                    ListView(
-                      children: [
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: <Widget>[
-                            AnimatedOpacity(
-                              duration: Duration(milliseconds: 300),
-                              opacity: logo ? 0 : 1,
-                              child: Container(
-                                height: settingsState ? size.height * 0.45 : 0,
-                                width: size1.width,
-                                child: AnimatedContainer(
-                                  duration: Duration(milliseconds: 700),
-                                  height: size.height * 0.45,
+            settingsState
+                ? Stack(
+                    children: [
+                      ListView(
+                        children: [
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: <Widget>[
+                              AnimatedOpacity(
+                                duration: Duration(milliseconds: 300),
+                                opacity: logo ? 0 : 1,
+                                child: Container(
+                                  height: settingsState ? size.height * 0.45 : 0,
                                   width: size1.width,
-                                  color: bgColor[dark],
+                                  child: AnimatedContainer(
+                                    duration: Duration(milliseconds: 700),
+                                    height: size.height * 0.45,
+                                    width: size1.width,
+                                    color: bgColor[dark],
+                                  ),
                                 ),
                               ),
-                            ),
-                            AnimatedOpacity(
-                              duration: Duration(milliseconds: 300),
-                              opacity: managerButton ? 0 : 1,
-                              child: Container(
-                                height: settingsState ? size.height * 0.1 : 0,
-                                child: AnimatedContainer(
-                                  duration: Duration(milliseconds: 700),
-                                  height: size.height * 0.1,
-                                  width: size1.width,
-                                  color: bgColor[dark],
+                              AnimatedOpacity(
+                                duration: Duration(milliseconds: 300),
+                                opacity: managerButton ? 0 : 1,
+                                child: Container(
+                                  height: settingsState ? size.height * 0.1 : 0,
+                                  child: AnimatedContainer(
+                                    duration: Duration(milliseconds: 700),
+                                    height: size.height * 0.1,
+                                    width: size1.width,
+                                    color: bgColor[dark],
+                                  ),
                                 ),
                               ),
-                            ),
-                            AnimatedOpacity(
-                              duration: Duration(milliseconds: 300),
-                              opacity: generatorButton ? 0 : 1,
-                              child: Container(
-                                height: settingsState ? size.height * 0.1 : 0,
-                                child: AnimatedContainer(
-                                  duration: Duration(milliseconds: 700),
-                                  height: size.height * 0.1,
-                                  width: size1.width,
-                                  color: bgColor[dark],
+                              AnimatedOpacity(
+                                duration: Duration(milliseconds: 300),
+                                opacity: generatorButton ? 0 : 1,
+                                child: Container(
+                                  height: settingsState ? size.height * 0.1 : 0,
+                                  child: AnimatedContainer(
+                                    duration: Duration(milliseconds: 700),
+                                    height: size.height * 0.1,
+                                    width: size1.width,
+                                    color: bgColor[dark],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    ListView(
-                      physics: NeverScrollableScrollPhysics(),
-                      children: [
-                        AnimatedOpacity(
-                          duration: Duration(milliseconds: 300),
-                          opacity: logo ? 0 : 1,
-                          child: Container(
-                            height: size.height,
-                            width: size1.width,
-                            padding: EdgeInsets.fromLTRB(
-                                size.width * 0.04,
-                                size.width * 0.08,
-                                size.width * 0.04,
-                                size.width * 0.04),
-                            child: ListView(
-                              children: [
-                                Settings(),
-                              ],
-                            ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                )
-              : SizedBox(),
-          animate
-              ? Container(
-                  height: size.height,
-                  width: size1.width,
-                  color: Colors.transparent,
-                )
-              : SizedBox(),
-          animate
-              ? ListView(
-                  children: [
-                    CircularRevealAnimation(
-                      animation: animation,
-                      centerAlignment: FractionalOffset(alignment, 0.867),
-                      minRadius: size.width * 0.1,
-                      child: Container(
-                        height: size.height,
-                        width: size1.width,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                              begin: Alignment.bottomLeft,
-                              end: Alignment.topRight,
-                              colors: [
-                                bottomLeftColor[theme],
-                                topRightColor[theme]
-                              ]),
-                        ),
-                        padding: EdgeInsets.fromLTRB(
-                            size.width * 0.04,
-                            size.width * 0.08,
-                            size.width * 0.04,
-                            size.width * 0.08),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  updatePassword
-                                      ? editPage[lang]
-                                      : addNew[lang],
-                                  style: Theme.of(context)
-                                      .primaryTextTheme
-                                      .headline1
-                                      .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.11)),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    if(list){
-                                      if (updatePassword) {
-                                        close(true, false);
-                                      } else {
-                                        close(false, false);
-                                      }
-                                    } else {
-                                      close(false, true);
-                                    }
-                                  },
-                                  child: Container(
-                                    color: Colors.transparent,
-                                    child: Icon(
-                                      CustomIcons.cross,
-                                      size: size.width * 0.1,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(
-                              height: size.height * 0.03,
-                            ),
-                            AnimatedOpacity(
-                              duration: Duration(milliseconds: 200),
-                              opacity: firstField ? 1 : 0,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    titleField[lang],
-                                    style: Theme.of(context)
-                                        .primaryTextTheme
-                                        .headline1
-                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
-                                  ),
-                                  Stack(
-                                    alignment: FractionalOffset(0.5, 0.95),
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: <Widget>[
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.height * 0.002,
-                                            width:
-                                                active1 ? 0 : size.width * 0.46,
-                                            color: color1,
-                                          ),
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.height * 0.002,
-                                            width:
-                                                active1 ? 0 : size.width * 0.46,
-                                            color: color1,
-                                          ),
-                                        ],
-                                      ),
-                                      TextField(
-                                        onTap: () {
-                                          setState(() {
-                                            active1 = true;
-                                            active2 = false;
-                                            active3 = false;
-                                            active4 = false;
-
-                                            titleHint = '';
-
-                                            passHint = passField[lang];
-
-                                            color1 = Colors.white;
-                                            color2 = Colors.white;
-                                          });
-                                        },
-                                        onSubmitted: (value) {
-                                          fieldFocusChange(
-                                              context, _titleFocus, _passFocus);
-
-                                          setState(() {
-                                            active1 = false;
-                                            active2 = true;
-
-                                            titleHint = titleField[lang];
-                                          });
-                                        },
-                                        controller: _titleController,
-                                        focusNode: _titleFocus,
-                                        autocorrect: true,
-                                        keyboardType: TextInputType.text,
-                                        textInputAction: TextInputAction.next,
-                                        enabled: true,
-                                        cursorColor: Colors.white,
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline2
-                                            .copyWith(
-                                                fontSize: ScreenUtil().setSp(size.width * 0.057)),
-                                        decoration: InputDecoration(
-                                            border: InputBorder.none,
-                                            hintText: titleHint,
-                                            hintStyle: Theme.of(context)
-                                                .primaryTextTheme
-                                                .headline2
-                                                .copyWith(
-                                                    fontSize:
-                                                    ScreenUtil().setSp(size.width * 0.057),
-                                                    color: color1
-                                                        .withOpacity(0.6))),
-                                      ),
-                                    ],
-                                  ),
+                        ],
+                      ),
+                      ListView(
+                        physics: NeverScrollableScrollPhysics(),
+                        children: [
+                          AnimatedOpacity(
+                            duration: Duration(milliseconds: 300),
+                            opacity: logo ? 0 : 1,
+                            child: Container(
+                              height: size.height,
+                              width: size1.width,
+                              padding: EdgeInsets.fromLTRB(
+                                  size.width * 0.04,
+                                  size.width * 0.08,
+                                  size.width * 0.04,
+                                  size.width * 0.04),
+                              child: ListView(
+                                children: [
+                                  Settings(),
                                 ],
                               ),
                             ),
-                            SizedBox(
-                              height: size.height * 0.03,
-                            ),
-                            AnimatedOpacity(
-                              duration: Duration(milliseconds: 200),
-                              opacity: secondField ? 1 : 0,
-                              child: Column(
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                : SizedBox(),
+            animate
+                ? Container(
+                    height: size.height,
+                    width: size1.width,
+                    color: Colors.transparent,
+                  )
+                : SizedBox(),
+            animate
+                ? ListView(
+                    children: [
+                      CircularRevealAnimation(
+                        animation: animation,
+                        centerAlignment: FractionalOffset(alignment, 0.867),
+                        minRadius: size.width * 0.1,
+                        child: Container(
+                          height: size.height,
+                          width: size1.width,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                                begin: Alignment.bottomLeft,
+                                end: Alignment.topRight,
+                                colors: [
+                                  bottomLeftColor[theme],
+                                  topRightColor[theme]
+                                ]),
+                          ),
+                          padding: EdgeInsets.fromLTRB(
+                              size.width * 0.04,
+                              size.width * 0.08,
+                              size.width * 0.04,
+                              size.width * 0.08),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
                                   Text(
-                                    passField[lang],
+                                    updatePassword
+                                        ? editPage[lang]
+                                        : addNew[lang],
                                     style: Theme.of(context)
                                         .primaryTextTheme
                                         .headline1
-                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
+                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.11)),
                                   ),
-                                  Stack(
-                                    alignment: FractionalOffset(0.5, 0.95),
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: <Widget>[
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.height * 0.002,
-                                            width:
-                                                active2 ? 0 : size.width * 0.46,
-                                            color: color2,
-                                          ),
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.height * 0.002,
-                                            width:
-                                                active2 ? 0 : size.width * 0.46,
-                                            color: color2,
-                                          ),
-                                        ],
+                                  GestureDetector(
+                                    onTap: () {
+                                      if(list){
+                                        if (updatePassword) {
+                                          close(true, false);
+                                        } else {
+                                          close(false, false);
+                                        }
+                                      } else {
+                                        close(false, true);
+                                      }
+                                    },
+                                    child: Container(
+                                      color: Colors.transparent,
+                                      child: Icon(
+                                        CustomIcons.cross,
+                                        size: size.width * 0.1,
+                                        color: Colors.white,
                                       ),
-                                      TextField(
-                                        onTap: () {
-                                          setState(() {
-                                            active1 = false;
-                                            active2 = true;
-                                            active3 = false;
-                                            active4 = false;
-
-                                            passHint = '';
-
-                                            titleHint = titleField[lang];
-
-                                            color1 = Colors.white;
-                                            color2 = Colors.white;
-                                          });
-                                        },
-                                        onSubmitted: (value) {
-                                          fieldFocusChange(context, _passFocus,
-                                              _usernameFocus);
-
-                                          setState(() {
-                                            active2 = false;
-                                            active3 = true;
-
-                                            passHint = passField[lang];
-                                          });
-                                        },
-                                        controller: _passController,
-                                        focusNode: _passFocus,
-                                        autocorrect: false,
-                                        keyboardType:
-                                            TextInputType.visiblePassword,
-                                        textInputAction: TextInputAction.next,
-                                        enabled: true,
-                                        obscureText: obs,
-                                        cursorColor: Colors.white,
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline2
-                                            .copyWith(
-                                                fontSize: ScreenUtil().setSp(size.width * 0.057)),
-                                        decoration: InputDecoration(
-                                          suffixIcon: IconButton(
-                                            icon: Icon(
-                                              obs
-                                                  ? CustomIcons.eye_off
-                                                  : CustomIcons.eye,
-                                              color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(
+                                height: size.height * 0.03,
+                              ),
+                              AnimatedOpacity(
+                                duration: Duration(milliseconds: 200),
+                                opacity: firstField ? 1 : 0,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      titleField[lang],
+                                      style: Theme.of(context)
+                                          .primaryTextTheme
+                                          .headline1
+                                          .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
+                                    ),
+                                    Stack(
+                                      alignment: FractionalOffset(0.5, 0.95),
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: <Widget>[
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 500),
+                                              curve: Curves.easeInOut,
+                                              height: size.height * 0.002,
+                                              width:
+                                                  active1 ? 0 : size.width * 0.46,
+                                              color: color1,
                                             ),
-                                            onPressed: () {
-                                              setState(() {
-                                                obs = !obs;
-                                              });
-                                            },
-                                          ),
-                                          border: InputBorder.none,
-                                          hintText: passHint,
-                                          hintStyle: Theme.of(context)
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 500),
+                                              curve: Curves.easeInOut,
+                                              height: size.height * 0.002,
+                                              width:
+                                                  active1 ? 0 : size.width * 0.46,
+                                              color: color1,
+                                            ),
+                                          ],
+                                        ),
+                                        TextField(
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = true;
+                                              active2 = false;
+                                              active3 = false;
+                                              active4 = false;
+
+                                              titleHint = '';
+
+                                              passHint = passField[lang];
+
+                                              color1 = Colors.white;
+                                              color2 = Colors.white;
+                                            });
+                                          },
+                                          onSubmitted: (value) {
+                                            fieldFocusChange(
+                                                context, _titleFocus, _passFocus);
+
+                                            setState(() {
+                                              active1 = false;
+                                              active2 = true;
+
+                                              titleHint = titleField[lang];
+                                            });
+                                          },
+                                          controller: _titleController,
+                                          focusNode: _titleFocus,
+                                          autocorrect: true,
+                                          keyboardType: TextInputType.text,
+                                          textInputAction: TextInputAction.next,
+                                          enabled: true,
+                                          cursorColor: Colors.white,
+                                          style: Theme.of(context)
                                               .primaryTextTheme
                                               .headline2
                                               .copyWith(
-                                                  fontSize: ScreenUtil().setSp(size.width * 0.057),
-                                                  color:
-                                                      color2.withOpacity(0.6)),
+                                                  fontSize: ScreenUtil().setSp(size.width * 0.057)),
+                                          decoration: InputDecoration(
+                                              border: InputBorder.none,
+                                              hintText: titleHint,
+                                              hintStyle: Theme.of(context)
+                                                  .primaryTextTheme
+                                                  .headline2
+                                                  .copyWith(
+                                                      fontSize:
+                                                      ScreenUtil().setSp(size.width * 0.057),
+                                                      color: color1
+                                                          .withOpacity(0.6))),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            SizedBox(
-                              height: size.height * 0.03,
-                            ),
-                            AnimatedOpacity(
-                              duration: Duration(milliseconds: 200),
-                              opacity: thirdField ? 1 : 0,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    usernameField[lang],
-                                    style: Theme.of(context)
-                                        .primaryTextTheme
-                                        .headline1
-                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
-                                  ),
-                                  Stack(
-                                    alignment: FractionalOffset(0.5, 0.95),
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: <Widget>[
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.height * 0.002,
-                                            width:
-                                                active3 ? 0 : size.width * 0.46,
-                                            color: Colors.white,
-                                          ),
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.height * 0.002,
-                                            width:
-                                                active3 ? 0 : size.width * 0.46,
-                                            color: Colors.white,
-                                          ),
-                                        ],
-                                      ),
-                                      TextField(
-                                        onTap: () {
-                                          setState(() {
-                                            active1 = false;
-                                            active2 = false;
-                                            active3 = true;
-                                            active4 = false;
+                              SizedBox(
+                                height: size.height * 0.03,
+                              ),
+                              AnimatedOpacity(
+                                duration: Duration(milliseconds: 200),
+                                opacity: secondField ? 1 : 0,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      passField[lang],
+                                      style: Theme.of(context)
+                                          .primaryTextTheme
+                                          .headline1
+                                          .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
+                                    ),
+                                    Stack(
+                                      alignment: FractionalOffset(0.5, 0.95),
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: <Widget>[
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 500),
+                                              curve: Curves.easeInOut,
+                                              height: size.height * 0.002,
+                                              width:
+                                                  active2 ? 0 : size.width * 0.46,
+                                              color: color2,
+                                            ),
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 500),
+                                              curve: Curves.easeInOut,
+                                              height: size.height * 0.002,
+                                              width:
+                                                  active2 ? 0 : size.width * 0.46,
+                                              color: color2,
+                                            ),
+                                          ],
+                                        ),
+                                        TextField(
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = false;
+                                              active2 = true;
+                                              active3 = false;
+                                              active4 = false;
 
-                                            titleHint = titleField[lang];
-                                            passHint = passField[lang];
+                                              passHint = '';
 
-                                            color1 = Colors.white;
-                                            color2 = Colors.white;
-                                          });
-                                        },
-                                        onSubmitted: (value) {
-                                          fieldFocusChange(context,
-                                              _usernameFocus, _linkFocus);
+                                              titleHint = titleField[lang];
 
-                                          setState(() {
-                                            active3 = false;
-                                            active4 = true;
-                                          });
-                                        },
-                                        controller: _usernameController,
-                                        focusNode: _usernameFocus,
-                                        autocorrect: false,
-                                        keyboardType: TextInputType.text,
-                                        textInputAction: TextInputAction.next,
-                                        enabled: true,
-                                        cursorColor: Colors.white,
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline2
-                                            .copyWith(
-                                                fontSize: ScreenUtil().setSp(size.width * 0.057)),
-                                        decoration: InputDecoration(
+                                              color1 = Colors.white;
+                                              color2 = Colors.white;
+                                            });
+                                          },
+                                          onSubmitted: (value) {
+                                            fieldFocusChange(context, _passFocus,
+                                                _usernameFocus);
+
+                                            setState(() {
+                                              active2 = false;
+                                              active3 = true;
+
+                                              passHint = passField[lang];
+                                            });
+                                          },
+                                          controller: _passController,
+                                          focusNode: _passFocus,
+                                          autocorrect: false,
+                                          keyboardType:
+                                              TextInputType.visiblePassword,
+                                          textInputAction: TextInputAction.next,
+                                          enabled: true,
+                                          obscureText: obs,
+                                          cursorColor: Colors.white,
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(size.width * 0.057)),
+                                          decoration: InputDecoration(
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                obs
+                                                    ? CustomIcons.eye_off
+                                                    : CustomIcons.eye,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: () {
+                                                setState(() {
+                                                  obs = !obs;
+                                                });
+                                              },
+                                            ),
                                             border: InputBorder.none,
-                                            hintText: active3
-                                                ? ''
-                                                : usernameField[lang],
+                                            hintText: passHint,
                                             hintStyle: Theme.of(context)
                                                 .primaryTextTheme
                                                 .headline2
                                                 .copyWith(
-                                                    fontSize:
-                                                    ScreenUtil().setSp(size.width * 0.057),
-                                                    color: Colors.white
-                                                        .withOpacity(0.6))),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(
-                              height: size.height * 0.03,
-                            ),
-                            AnimatedOpacity(
-                              duration: Duration(milliseconds: 200),
-                              opacity: forthField ? 1 : 0,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    linkField[lang],
-                                    style: Theme.of(context)
-                                        .primaryTextTheme
-                                        .headline1
-                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
-                                  ),
-                                  Stack(
-                                    alignment: FractionalOffset(0.5, 0.95),
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: <Widget>[
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.height * 0.002,
-                                            width:
-                                                active4 ? 0 : size.width * 0.46,
-                                            color: Colors.white,
+                                                    fontSize: ScreenUtil().setSp(size.width * 0.057),
+                                                    color:
+                                                        color2.withOpacity(0.6)),
                                           ),
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.height * 0.002,
-                                            width:
-                                                active4 ? 0 : size.width * 0.46,
-                                            color: Colors.white,
-                                          ),
-                                        ],
-                                      ),
-                                      TextField(
-                                        onTap: () {
-                                          setState(() {
-                                            active1 = false;
-                                            active2 = false;
-                                            active3 = false;
-                                            active4 = true;
-
-                                            titleHint = titleField[lang];
-                                            passHint = passField[lang];
-
-                                            color1 = Colors.white;
-                                            color2 = Colors.white;
-                                          });
-                                        },
-                                        onSubmitted: (value) {
-                                          setState(() {
-                                            active4 = false;
-                                          });
-                                        },
-                                        controller: _linkController,
-                                        focusNode: _linkFocus,
-                                        autocorrect: false,
-                                        keyboardType: TextInputType.url,
-                                        textInputAction: TextInputAction.done,
-                                        enabled: true,
-                                        cursorColor: Colors.white,
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline2
-                                            .copyWith(
-                                                fontSize: ScreenUtil().setSp(size.width * 0.057)),
-                                        decoration: InputDecoration(
-                                            border: InputBorder.none,
-                                            hintText:
-                                                active4 ? '' : linkField[lang],
-                                            hintStyle: Theme.of(context)
-                                                .primaryTextTheme
-                                                .headline2
-                                                .copyWith(
-                                                    fontSize:
-                                                    ScreenUtil().setSp(size.width * 0.057),
-                                                    color: Colors.white
-                                                        .withOpacity(0.6))),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : SizedBox(),
-          AnimatedPositioned(
-            top: top,
-            left: left,
-            right: right,
-            duration: Duration(milliseconds: settingsState ? 400 : 800),
-            curve: settingsState ? Curves.easeInBack : Curves.easeInOut,
-            child: AnimatedOpacity(
-              duration: Duration(milliseconds: 300),
-              opacity: circle ? 1 : 0,
-              child: Container(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    AnimatedContainer(
-                      duration: Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
-                      height: size.width * 0.25,
-                      width: size.width * 0.25,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            (addPassword || updatePassword)
-                                ? Colors.white.withOpacity(0.5)
-                                : bottomLeftColor[theme].withOpacity(0.5),
-                            (addPassword || updatePassword)
-                                ? Colors.white.withOpacity(0.5)
-                                : topRightColor[theme].withOpacity(0.5)
-                          ],
-                        ),
-                        borderRadius:
-                            BorderRadius.circular(size.width * 0.25 / 2),
-                      ),
-                    ),
-                    AnimatedContainer(
-                      duration: Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
-                      height: size.width * 0.2,
-                      width: size.width * 0.2,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            (addPassword || updatePassword)
-                                ? Colors.white
-                                : bottomLeftColor[theme],
-                            (addPassword || updatePassword)
-                                ? Colors.white
-                                : topRightColor[theme]
-                          ],
-                        ),
-                        borderRadius:
-                            BorderRadius.circular(size.width * 0.2 / 2),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        if (add1 && !addPassword) {
-                          addPassFromList();
-                        }
-                        if (add2 && !addPassword) {
-                          addPassFromGenerator();
-                        }
-                        if (addPassword) {
-                          if (canSave) {
-                            savePass();
-                          }
-                        }
-                        if (edit && !updatePassword) {
-                          editPassFromView();
-                        }
-                        if (edit) {
-                          if (canSave) {
-                            editPass();
-                          }
-                        }
-                        if (settings && !settingsState) {
-                          openSettings();
-                        }
-                      },
-                      child: Container(
-                        height: size.width * 0.25,
-                        width: size.width * 0.25,
-                        color: Colors.transparent,
-                        alignment: Alignment.center,
-                        child: RotationTransition(
-                          turns: Tween(begin: 0.0, end: -0.5)
-                              .animate(rotateController),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Transform.rotate(
-                                angle: pi,
-                                child: Container(
-                                    child: AnimatedOpacity(
-                                  duration: Duration(milliseconds: 400),
-                                  opacity: (edit && updatePassword) ? 1 : 0,
-                                  child: Icon(
-                                    Icons.check,
-                                    size: size.width * 0.1,
-                                    color: colorAnimation.value,
-                                  ),
-                                )),
+                              SizedBox(
+                                height: size.height * 0.03,
                               ),
-                              Container(
-                                  child: AnimatedOpacity(
-                                duration: Duration(milliseconds: 400),
-                                opacity: (edit && !updatePassword) ? 1 : 0,
-                                child: Icon(
-                                  CustomIcons.pencil,
-                                  size: size.width * 0.07,
-                                  color: colorAnimation.value,
+                              AnimatedOpacity(
+                                duration: Duration(milliseconds: 200),
+                                opacity: thirdField ? 1 : 0,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      usernameField[lang],
+                                      style: Theme.of(context)
+                                          .primaryTextTheme
+                                          .headline1
+                                          .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
+                                    ),
+                                    Stack(
+                                      alignment: FractionalOffset(0.5, 0.95),
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: <Widget>[
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 500),
+                                              curve: Curves.easeInOut,
+                                              height: size.height * 0.002,
+                                              width:
+                                                  active3 ? 0 : size.width * 0.46,
+                                              color: Colors.white,
+                                            ),
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 500),
+                                              curve: Curves.easeInOut,
+                                              height: size.height * 0.002,
+                                              width:
+                                                  active3 ? 0 : size.width * 0.46,
+                                              color: Colors.white,
+                                            ),
+                                          ],
+                                        ),
+                                        TextField(
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = false;
+                                              active2 = false;
+                                              active3 = true;
+                                              active4 = false;
+
+                                              titleHint = titleField[lang];
+                                              passHint = passField[lang];
+
+                                              color1 = Colors.white;
+                                              color2 = Colors.white;
+                                            });
+                                          },
+                                          onSubmitted: (value) {
+                                            fieldFocusChange(context,
+                                                _usernameFocus, _linkFocus);
+
+                                            setState(() {
+                                              active3 = false;
+                                              active4 = true;
+                                            });
+                                          },
+                                          controller: _usernameController,
+                                          focusNode: _usernameFocus,
+                                          autocorrect: false,
+                                          keyboardType: TextInputType.text,
+                                          textInputAction: TextInputAction.next,
+                                          enabled: true,
+                                          cursorColor: Colors.white,
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(size.width * 0.057)),
+                                          decoration: InputDecoration(
+                                              border: InputBorder.none,
+                                              hintText: active3
+                                                  ? ''
+                                                  : usernameField[lang],
+                                              hintStyle: Theme.of(context)
+                                                  .primaryTextTheme
+                                                  .headline2
+                                                  .copyWith(
+                                                      fontSize:
+                                                      ScreenUtil().setSp(size.width * 0.057),
+                                                      color: Colors.white
+                                                          .withOpacity(0.6))),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                              )),
-                              Container(
-                                  child: AnimatedOpacity(
-                                duration: Duration(milliseconds: 400),
-                                opacity: settings ? 1 : 0,
-                                child: Icon(
-                                  CustomIcons.cog,
-                                  size: size.width * 0.1,
-                                  color: Colors.white,
+                              ),
+                              SizedBox(
+                                height: size.height * 0.03,
+                              ),
+                              AnimatedOpacity(
+                                duration: Duration(milliseconds: 200),
+                                opacity: forthField ? 1 : 0,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      linkField[lang],
+                                      style: Theme.of(context)
+                                          .primaryTextTheme
+                                          .headline1
+                                          .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.08)),
+                                    ),
+                                    Stack(
+                                      alignment: FractionalOffset(0.5, 0.95),
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: <Widget>[
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 500),
+                                              curve: Curves.easeInOut,
+                                              height: size.height * 0.002,
+                                              width:
+                                                  active4 ? 0 : size.width * 0.46,
+                                              color: Colors.white,
+                                            ),
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 500),
+                                              curve: Curves.easeInOut,
+                                              height: size.height * 0.002,
+                                              width:
+                                                  active4 ? 0 : size.width * 0.46,
+                                              color: Colors.white,
+                                            ),
+                                          ],
+                                        ),
+                                        TextField(
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = false;
+                                              active2 = false;
+                                              active3 = false;
+                                              active4 = true;
+
+                                              titleHint = titleField[lang];
+                                              passHint = passField[lang];
+
+                                              color1 = Colors.white;
+                                              color2 = Colors.white;
+                                            });
+                                          },
+                                          onSubmitted: (value) {
+                                            setState(() {
+                                              active4 = false;
+                                            });
+                                          },
+                                          controller: _linkController,
+                                          focusNode: _linkFocus,
+                                          autocorrect: false,
+                                          keyboardType: TextInputType.url,
+                                          textInputAction: TextInputAction.done,
+                                          enabled: true,
+                                          cursorColor: Colors.white,
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(size.width * 0.057)),
+                                          decoration: InputDecoration(
+                                              border: InputBorder.none,
+                                              hintText:
+                                                  active4 ? '' : linkField[lang],
+                                              hintStyle: Theme.of(context)
+                                                  .primaryTextTheme
+                                                  .headline2
+                                                  .copyWith(
+                                                      fontSize:
+                                                      ScreenUtil().setSp(size.width * 0.057),
+                                                      color: Colors.white
+                                                          .withOpacity(0.6))),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                              )),
-                              Container(
-                                  child: AnimatedOpacity(
-                                duration: Duration(milliseconds: 400),
-                                opacity: (add1 || add2) ? 1 : 0,
-                                child: Icon(
-                                  CustomIcons.plus,
-                                  size: size.width * 0.1,
-                                  color: colorAnimation.value,
-                                ),
-                              )),
+                              ),
                             ],
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  )
+                : SizedBox(),
+            AnimatedPositioned(
+              top: top,
+              left: left,
+              right: right,
+              duration: Duration(milliseconds: settingsState ? 400 : 800),
+              curve: settingsState ? Curves.easeInBack : Curves.easeInOut,
+              child: AnimatedOpacity(
+                duration: Duration(milliseconds: 300),
+                opacity: circle ? 1 : 0,
+                child: Container(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      AnimatedContainer(
+                        duration: Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                        height: size.width * 0.25,
+                        width: size.width * 0.25,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              (addPassword || updatePassword)
+                                  ? Colors.white.withOpacity(0.5)
+                                  : bottomLeftColor[theme].withOpacity(0.5),
+                              (addPassword || updatePassword)
+                                  ? Colors.white.withOpacity(0.5)
+                                  : topRightColor[theme].withOpacity(0.5)
+                            ],
+                          ),
+                          borderRadius:
+                              BorderRadius.circular(size.width * 0.25 / 2),
+                        ),
+                      ),
+                      AnimatedContainer(
+                        duration: Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                        height: size.width * 0.2,
+                        width: size.width * 0.2,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              (addPassword || updatePassword)
+                                  ? Colors.white
+                                  : bottomLeftColor[theme],
+                              (addPassword || updatePassword)
+                                  ? Colors.white
+                                  : topRightColor[theme]
+                            ],
+                          ),
+                          borderRadius:
+                              BorderRadius.circular(size.width * 0.2 / 2),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          if (add1 && !addPassword) {
+                            addPassFromList();
+                          }
+                          if (add2 && !addPassword) {
+                            addPassFromGenerator();
+                          }
+                          if (addPassword) {
+                            if (canSave) {
+                              savePass();
+                            }
+                          }
+                          if (edit && !updatePassword) {
+                            editPassFromView();
+                          }
+                          if (edit) {
+                            if (canSave) {
+                              editPass();
+                            }
+                          }
+                          if (settings && !settingsState) {
+                            openSettings();
+                          }
+                        },
+                        child: Container(
+                          height: size.width * 0.25,
+                          width: size.width * 0.25,
+                          color: Colors.transparent,
+                          alignment: Alignment.center,
+                          child: RotationTransition(
+                            turns: Tween(begin: 0.0, end: -0.5)
+                                .animate(rotateController),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Transform.rotate(
+                                  angle: pi,
+                                  child: Container(
+                                      child: AnimatedOpacity(
+                                    duration: Duration(milliseconds: 400),
+                                    opacity: (edit && updatePassword) ? 1 : 0,
+                                    child: Icon(
+                                      Icons.check,
+                                      size: size.width * 0.1,
+                                      color: colorAnimation.value,
+                                    ),
+                                  )),
+                                ),
+                                Container(
+                                    child: AnimatedOpacity(
+                                  duration: Duration(milliseconds: 400),
+                                  opacity: (edit && !updatePassword) ? 1 : 0,
+                                  child: Icon(
+                                    CustomIcons.pencil,
+                                    size: size.width * 0.07,
+                                    color: colorAnimation.value,
+                                  ),
+                                )),
+                                Container(
+                                    child: AnimatedOpacity(
+                                  duration: Duration(milliseconds: 400),
+                                  opacity: settings ? 1 : 0,
+                                  child: Icon(
+                                    CustomIcons.cog,
+                                    size: size.width * 0.1,
+                                    color: Colors.white,
+                                  ),
+                                )),
+                                Container(
+                                    child: AnimatedOpacity(
+                                  duration: Duration(milliseconds: 400),
+                                  opacity: (add1 || add2) ? 1 : 0,
+                                  child: Icon(
+                                    CustomIcons.plus,
+                                    size: size.width * 0.1,
+                                    color: colorAnimation.value,
+                                  ),
+                                )),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          appear
-              ? AnimatedOpacity(
-                  duration: Duration(milliseconds: 500),
-                  opacity: fade ? 0 : 1,
-                  child: Container(
-                    height: size.height,
-                    width: size.width,
-                    color: Colors.white,
-                  ),
-                )
-              : SizedBox(),
-        ],
+            appear
+                ? AnimatedOpacity(
+                    duration: Duration(milliseconds: 500),
+                    opacity: fade ? 0 : 1,
+                    child: Container(
+                      height: size.height,
+                      width: size.width,
+                      color: Colors.white,
+                    ),
+                  )
+                : SizedBox(),
+          ],
+        ),
       ),
     );
   }

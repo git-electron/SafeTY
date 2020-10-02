@@ -81,15 +81,20 @@ var setLightTheme = ['Светлая тема', 'Light theme'];
 var changeMasterPassButton = ['Сменить мастер-пароль', 'Change masterpass'];
 var cloud = ['Облако', 'Cloud'];
 var signInButton = ['Войти', 'Sign in'];
+var registerButton = ['Зарегистрироваться', 'Register'];
 var signOutButton = ['Выйти', 'Sign out'];
 var backupButton = ['Загрузить на сервер', 'Backup'];
 var syncButton = ['Синхронизировать', 'Sync'];
+var resetPasswordButton = ['Сбросить пароль', 'Reset password'];
 var donate = ['Поддержать', 'Donate'];
 var about = ['О разработчике', 'About'];
 
 //cloud storage
-var verifyEmail = ['На указанную почту отправлено письмо с подтверждением', 'A confirmation email was sent to the specified mail'];
+var verifyEmail = ['На указанную почту отправлено письмо с подтверждением. После подтверждения попробуй войти', 'A confirmation email was sent to the specified adress. After confirmation try to sign in'];
 var couldNotSignIn = ['Невозможно войти', 'Could not sign in'];
+var cloudPassword = ['Облачный пароль', 'Cloud password'];
+var createCloudPassword = ['Придумай облачный пароль', 'Create cloud password'];
+var enterCloudPassword = ['Введи облачный пароль', 'Enter cloud password'];
 
 //generator
 var useLetters = ['Использовать буквы', 'Use letters'];

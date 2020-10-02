@@ -9,9 +9,9 @@ import 'package:flutter_string_encryption/flutter_string_encryption.dart';
 import 'package:safety/Database/DBHelper.dart';
 import 'package:safety/Database/password.dart';
 import 'package:safety/Settings/texts.dart';
-import 'package:safety/Utils/auth.dart';
-import 'package:safety/Utils/models/user.dart';
-import 'package:safety/Database/cloud.dart';
+import 'package:safety/Cloud/auth.dart';
+import 'package:safety/Cloud/models/user.dart';
+import 'package:safety/Cloud/cloud.dart';
 
 import 'package:safety/Settings/themes.dart';
 import 'package:safety/Utils/fieldFocusChange.dart';
@@ -38,12 +38,14 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   bool pressed7 = false;
   bool pressed8 = false;
   bool pressed9 = false;
+  bool pressed10 = false;
   bool themeSelect = false;
   bool languageSelect = false;
   bool changePass = false;
   bool donateWindow = false;
   bool aboutWindow = false;
   bool signInField = false;
+  bool resetField = false;
 
   bool selection = false;
   bool langSelection = false;
@@ -51,6 +53,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   bool donating = false;
   bool aboutInfo = false;
   bool signingIn = false;
+  bool resetting = false;
 
   bool rus = false;
   bool buttons = false;
@@ -69,6 +72,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
 
   bool loggedIn = false;
   bool anim = false;
+  bool reg = false;
 
   double width1 = size.width * 0.75;
   double width2 = size.width * 0.75;
@@ -250,32 +254,26 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
     print(text);
   }
 
-  void checkMasterPassWhenSignUp() {
+  void checkPasswordWhenSignUp() {
     if (_masterPassController.text != '') {
-      decryptPass(_masterPassController.text).then((value) {
-        if (value) {
-          print('Success');
-          setState(() {
-            text = '';
-            finished = true;
-          });
-        } else {
-          setState(() {
-            text = incorrectPass[lang];
-            color2 = Colors.red;
-            finished = true;
-          });
-        }
-      });
+      if (_masterPassController.text.length >= 8) {
+        setState(() {
+          text = '';
+        });
+      } else {
+        setState(() {
+          text = less[lang];
+          color2 = Colors.red;
+        });
+      }
     } else {
       setState(() {
-        text = enterMasterPass[lang];
+        text = reg ? createCloudPassword[lang] : enterCloudPassword[lang];
         color2 = Colors.red;
-        finished = true;
       });
     }
 
-    print(text);
+    print('text = "' + text + '"');
   }
 
   Future<bool> setMasterPass() async {
@@ -291,6 +289,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
 
             oldDecryptKey = decryptKey;
           });
+
           encryptPass(_newMasterPassController.text);
         } else {
           setState(() {
@@ -397,7 +396,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
     });
   }
 
-  void backup () async {
+  void backup() async {
     int i = 0;
 
     User user = await _auth.getUser();
@@ -425,931 +424,580 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
     });
   }
 
+  void sync() async {
+    print('\n\nSyncing...\n\n');
+
+    int i = 0;
+
+    User user = await _auth.getUser();
+
+    DocumentSnapshot doc = await _database.getUserData(user.uid);
+    List<dynamic> passwords = doc.get('passwords');
+    List passwordsFromDB = [];
+
+    db.getPass().then((value) {
+      setState(() {
+        passwordsFromDB = value;
+      });
+
+      while (i < passwords.length) {
+        bool similar = false;
+
+        Map<String, dynamic> passFromCloud = {
+          'title': passwords[i]['title'],
+          'pass': passwords[i]['pass'],
+          'name': passwords[i]['name'],
+          'link': passwords[i]['link'],
+          'sortDate': passwords[i]['sortDate'],
+        };
+
+        print('> Cloud response:\n' + passFromCloud.toString() + '\n\n');
+
+        int index = 0;
+
+        while (index < passwordsFromDB.length) {
+          Password password = passwordsFromDB[index];
+
+          if (passwords[i]['sortDate'] == password.sortDate) {
+            print('Passwords are similar');
+            setState(() {
+              similar = true;
+            });
+          }
+
+          index++;
+        }
+
+        if (!similar) {
+          print(
+              '\n\nResult for ${passwords[i]['title']}: will be pushed into db');
+
+          Password password = Password(
+              passwords[i]['title'],
+              passwords[i]['pass'],
+              passwords[i]['name'],
+              passwords[i]['link'],
+              passwords[i]['sortDate']);
+          db.savePass(password);
+          print('[v] saved\n\n');
+        } else {
+          print(
+              '\n\nResult for ${passwords[i]['title']}: will NOT be pushed into db\n\n');
+        }
+
+        i++;
+      }
+    });
+  }
+
+  Future<bool> closeSettings() async {
+    setState(() {
+      page = 5;
+    });
+
+    Future.delayed(Duration(milliseconds: 200), () {
+      setState(() {
+        container = true;
+      });
+    });
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     Size size1 = MediaQuery.of(context).size;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        AnimatedContainer(
-          duration: Duration(milliseconds: 500),
-          curve: Curves.easeOut,
-          height: container ? size.height * 0.1 : 0,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            ShaderMask(
-              blendMode: BlendMode.srcATop,
-              shaderCallback: (Rect bounds) {
-                return LinearGradient(
-                  begin: Alignment.bottomLeft,
-                  end: Alignment.topRight,
-                  colors: [bottomLeftColor[theme], topRightColor[theme]],
-                ).createShader(bounds);
-              },
-              child: Text(
-                settingsTitle[lang],
-                style: Theme.of(context)
-                    .primaryTextTheme
-                    .headline1
-                    .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.11)),
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  page = 5;
-                });
-
-                Future.delayed(Duration(milliseconds: 200), () {
-                  setState(() {
-                    container = true;
-                  });
-                });
-              },
-              child: Container(
-                color: Colors.transparent,
-                child: Icon(
-                  CustomIcons.cross,
-                  size: size.width * 0.1,
-                  color: topRightColor[theme],
+    return WillPopScope(
+      onWillPop: closeSettings,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          AnimatedContainer(
+            duration: Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+            height: container ? size.height * 0.1 : 0,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              ShaderMask(
+                blendMode: BlendMode.srcATop,
+                shaderCallback: (Rect bounds) {
+                  return LinearGradient(
+                    begin: Alignment.bottomLeft,
+                    end: Alignment.topRight,
+                    colors: [bottomLeftColor[theme], topRightColor[theme]],
+                  ).createShader(bounds);
+                },
+                child: Text(
+                  settingsTitle[lang],
+                  style: Theme.of(context).primaryTextTheme.headline1.copyWith(
+                      fontSize: ScreenUtil().setSp(size.width * 0.11)),
                 ),
               ),
-            ),
-          ],
-        ),
-        Container(
-          height: size1.height * 0.868,
-          child: ListView(
-            physics: BouncingScrollPhysics(),
-            children: <Widget>[
-              SizedBox(
-                height: size.height * 0.05,
-              ),
-              Text(
-                appearance[lang],
-                style: Theme.of(context).primaryTextTheme.headline1.copyWith(
-                    fontSize: ScreenUtil().setSp(size.width * 0.08),
-                    color: color2Animation.value),
-              ),
-              AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                height: themeSelect ? size.height * 0.62 : size.height * 0.12,
-                width: size1.width,
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: () {
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    page = 5;
+                  });
+
+                  Future.delayed(Duration(milliseconds: 200), () {
                     setState(() {
-                      pressed1 = true;
-
-                      themeSelect = !themeSelect;
+                      container = true;
                     });
-
-                    if (selection) {
+                  });
+                },
+                child: Container(
+                  color: Colors.transparent,
+                  child: Icon(
+                    CustomIcons.cross,
+                    size: size.width * 0.1,
+                    color: topRightColor[theme],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Container(
+            height: size1.height * 0.868,
+            child: ListView(
+              physics: BouncingScrollPhysics(),
+              children: <Widget>[
+                SizedBox(
+                  height: size.height * 0.05,
+                ),
+                Text(
+                  appearance[lang],
+                  style: Theme.of(context).primaryTextTheme.headline1.copyWith(
+                      fontSize: ScreenUtil().setSp(size.width * 0.08),
+                      color: color2Animation.value),
+                ),
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  height: themeSelect ? size.height * 0.62 : size.height * 0.12,
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () {
                       setState(() {
-                        selection = false;
+                        pressed1 = true;
+
+                        themeSelect = !themeSelect;
                       });
-                    } else {
+
+                      if (selection) {
+                        setState(() {
+                          selection = false;
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            selection = true;
+                          });
+                        });
+                      }
+
                       Future.delayed(Duration(milliseconds: 300), () {
                         setState(() {
-                          selection = true;
+                          pressed1 = false;
                         });
                       });
-                    }
-
-                    Future.delayed(Duration(milliseconds: 300), () {
-                      setState(() {
-                        pressed1 = false;
-                      });
-                    });
-                  },
-                  onTapDown: (details) {
-                    if (!selection) {
+                    },
+                    onTapDown: (details) {
                       setState(() {
                         pressed1 = true;
                       });
-                    }
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      pressed1 = true;
-                    });
-                  },
-                  onLongPressEnd: (details) {
-                    setState(() {
-                      pressed1 = true;
-
-                      themeSelect = !themeSelect;
-                    });
-
-                    if (selection) {
+                    },
+                    onLongPress: () {
                       setState(() {
-                        selection = false;
+                        pressed1 = true;
                       });
-                    } else {
+                    },
+                    onLongPressEnd: (details) {
+                      setState(() {
+                        pressed1 = true;
+
+                        themeSelect = !themeSelect;
+                      });
+
+                      if (selection) {
+                        setState(() {
+                          selection = false;
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            selection = true;
+                          });
+                        });
+                      }
+
                       Future.delayed(Duration(milliseconds: 300), () {
                         setState(() {
-                          selection = true;
+                          pressed1 = false;
                         });
                       });
-                    }
-
-                    Future.delayed(Duration(milliseconds: 300), () {
-                      setState(() {
-                        pressed1 = false;
-                      });
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    height: themeSelect
-                        ? size.height * 0.6
-                        : (pressed1
-                            ? size.height * 0.1 - size.width * 0.02
-                            : size.height * 0.1),
-                    width: pressed1
-                        ? size1.width * 0.92 - size.width * 0.02
-                        : size1.width * 0.92,
+                    },
                     child: AnimatedContainer(
-                      padding: EdgeInsets.only(
-                          left: size.width * 0.04, right: size.width * 0.04),
-                      alignment: Alignment.topCenter,
-                      height: size.height * 0.1,
-                      width: size1.width,
-                      duration: Duration(milliseconds: 700),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(size.height * 0.02),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            bottomLeftColor[theme],
-                            topRightColor[theme]
-                          ],
-                        ),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            alignment: Alignment.centerLeft,
-                            height: pressed1
-                                ? size.height * 0.1 - size.width * 0.02
-                                : size.height * 0.1,
-                            width: size1.width * 0.92,
-                            child: Text(
-                              themeButton[lang],
-                              style: Theme.of(context)
-                                  .primaryTextTheme
-                                  .headline1
-                                  .copyWith(
-                                      fontSize:
-                                          ScreenUtil().setSp(size.width * 0.07),
-                                      color: colorAnimation.value),
-                            ),
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      height: themeSelect
+                          ? size.height * 0.6
+                          : (pressed1
+                              ? size.height * 0.1 - size.width * 0.02
+                              : size.height * 0.1),
+                      width: pressed1
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.topCenter,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              bottomLeftColor[theme],
+                              topRightColor[theme]
+                            ],
                           ),
-                          AnimatedContainer(
-                            alignment: Alignment.center,
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            height: themeSelect ? size.height * 0.45 : 0,
-                            width: size.height * 0.45,
-                            child: AnimatedOpacity(
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            AnimatedContainer(
                               duration: Duration(milliseconds: 300),
-                              opacity: selection ? 1 : 0,
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: <Widget>[
-                                  AnimatedContainer(
-                                    duration: Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                    width: (t == 5 || t == 4)
-                                        ? size.width * 0.3
-                                        : size.width * 0.2,
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: <Widget>[
-                                        SizedBox(
-                                          height: size.width * 0.04,
-                                        ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            if (selection) {
-                                              setState(() {
-                                                t = 5;
-                                                theme = 5;
-                                              });
-                                              saveThemeState(5);
-                                              print(theme);
-                                            }
-                                          },
-                                          child: AnimatedContainer(
-                                            height: (t == 5)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            width: (t == 5)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            duration:
-                                                Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular((t == 5)
-                                                      ? size.width * 0.3 / 2
-                                                      : size.width * 0.2 / 2),
-                                              border: Border.all(
-                                                  color: Colors.white,
-                                                  width: 3),
-                                              gradient: LinearGradient(
-                                                  begin: Alignment.bottomLeft,
-                                                  end: Alignment.topRight,
-                                                  colors: [
-                                                    bottomLeftColor[5],
-                                                    topRightColor[5]
-                                                  ]),
-                                            ),
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            if (selection) {
-                                              setState(() {
-                                                t = 4;
-                                                theme = 4;
-                                              });
-                                              saveThemeState(4);
-                                              print(theme);
-                                            }
-                                          },
-                                          child: AnimatedContainer(
-                                            height: (t == 4)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            width: (t == 4)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            duration:
-                                                Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular((t == 4)
-                                                      ? size.width * 0.3 / 2
-                                                      : size.width * 0.2 / 2),
-                                              border: Border.all(
-                                                  color: Colors.white,
-                                                  width: 3),
-                                              gradient: LinearGradient(
-                                                  begin: Alignment.bottomLeft,
-                                                  end: Alignment.topRight,
-                                                  colors: [
-                                                    bottomLeftColor[4],
-                                                    topRightColor[4]
-                                                  ]),
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          height: size.width * 0.04,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  AnimatedContainer(
-                                    duration: Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                    width: (t == 0 || t == 3)
-                                        ? size.width * 0.3
-                                        : size.width * 0.2,
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: <Widget>[
-                                        GestureDetector(
-                                          onTap: () {
-                                            if (selection) {
-                                              setState(() {
-                                                t = 0;
-                                                theme = 0;
-                                              });
-                                              saveThemeState(0);
-                                              print(theme);
-                                            }
-                                          },
-                                          child: AnimatedContainer(
-                                            height: (t == 0)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            width: (t == 0)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            duration:
-                                                Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular((t == 0)
-                                                      ? size.width * 0.3 / 2
-                                                      : size.width * 0.2 / 2),
-                                              border: Border.all(
-                                                  color: Colors.white,
-                                                  width: 3),
-                                              gradient: LinearGradient(
-                                                  begin: Alignment.bottomLeft,
-                                                  end: Alignment.topRight,
-                                                  colors: [
-                                                    bottomLeftColor[0],
-                                                    topRightColor[0]
-                                                  ]),
-                                            ),
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            if (selection) {
-                                              setState(() {
-                                                t = 3;
-                                                theme = 3;
-                                              });
-                                              saveThemeState(3);
-                                              print(theme);
-                                            }
-                                          },
-                                          child: AnimatedContainer(
-                                            height: (t == 3)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            width: (t == 3)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            duration:
-                                                Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular((t == 3)
-                                                      ? size.width * 0.3 / 2
-                                                      : size.width * 0.2 / 2),
-                                              border: Border.all(
-                                                  color: Colors.white,
-                                                  width: 3),
-                                              gradient: LinearGradient(
-                                                  begin: Alignment.bottomLeft,
-                                                  end: Alignment.topRight,
-                                                  colors: [
-                                                    bottomLeftColor[3],
-                                                    topRightColor[3]
-                                                  ]),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  AnimatedContainer(
-                                    duration: Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                    width: (t == 1 || t == 2)
-                                        ? size.width * 0.3
-                                        : size.width * 0.2,
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: <Widget>[
-                                        SizedBox(
-                                          height: size.width * 0.04,
-                                        ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            if (selection) {
-                                              setState(() {
-                                                t = 1;
-                                                theme = 1;
-                                              });
-                                              saveThemeState(1);
-                                              print(theme);
-                                            }
-                                          },
-                                          child: AnimatedContainer(
-                                            height: (t == 1)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            width: (t == 1)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            duration:
-                                                Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular((t == 1)
-                                                      ? size.width * 0.3 / 2
-                                                      : size.width * 0.2 / 2),
-                                              border: Border.all(
-                                                  color: Colors.white,
-                                                  width: 3),
-                                              gradient: LinearGradient(
-                                                  begin: Alignment.bottomLeft,
-                                                  end: Alignment.topRight,
-                                                  colors: [
-                                                    bottomLeftColor[1],
-                                                    topRightColor[1]
-                                                  ]),
-                                            ),
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            if (selection) {
-                                              setState(() {
-                                                t = 2;
-                                                theme = 2;
-                                              });
-                                              saveThemeState(2);
-                                              print(theme);
-                                            }
-                                          },
-                                          child: AnimatedContainer(
-                                            height: (t == 2)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            width: (t == 2)
-                                                ? size.width * 0.3
-                                                : size.width * 0.2,
-                                            duration:
-                                                Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular((t == 2)
-                                                      ? size.width * 0.3 / 2
-                                                      : size.width * 0.2 / 2),
-                                              border: Border.all(
-                                                  color: Colors.white,
-                                                  width: 3),
-                                              gradient: LinearGradient(
-                                                  begin: Alignment.bottomLeft,
-                                                  end: Alignment.topRight,
-                                                  colors: [
-                                                    bottomLeftColor[2],
-                                                    topRightColor[2]
-                                                  ]),
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          height: size.width * 0.04,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              curve: Curves.easeInOut,
+                              alignment: Alignment.centerLeft,
+                              height: pressed1
+                                  ? size.height * 0.1 - size.width * 0.02
+                                  : size.height * 0.1,
+                              width: size1.width * 0.92,
+                              child: Text(
+                                themeButton[lang],
+                                style: Theme.of(context)
+                                    .primaryTextTheme
+                                    .headline1
+                                    .copyWith(
+                                        fontSize: ScreenUtil()
+                                            .setSp(size.width * 0.07),
+                                        color: colorAnimation.value),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                height: size.height * 0.12,
-                width: size1.width,
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      pressed2 = true;
-                    });
-
-                    if (dark == 0) {
-                      setState(() {
-                        dark = 1;
-                      });
-                      colorController.forward();
-                      color2Controller.forward();
-                      saveDarkThemeState(dark);
-                    } else {
-                      setState(() {
-                        dark = 0;
-                      });
-                      colorController.reverse();
-                      color2Controller.reverse();
-                      saveDarkThemeState(dark);
-                    }
-
-                    Future.delayed(Duration(milliseconds: 200), () {
-                      setState(() {
-                        pressed2 = false;
-                      });
-                    });
-                  },
-                  onTapDown: (details) {
-                    setState(() {
-                      pressed2 = true;
-                    });
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      pressed2 = true;
-                    });
-                  },
-                  onLongPressEnd: (details) {
-                    setState(() {
-                      pressed2 = false;
-                    });
-
-                    if (dark == 0) {
-                      setState(() {
-                        dark = 1;
-                      });
-                      colorController.forward();
-                      color2Controller.forward();
-                      saveDarkThemeState(dark);
-                    } else {
-                      setState(() {
-                        dark = 0;
-                      });
-                      colorController.reverse();
-                      color2Controller.reverse();
-                      saveDarkThemeState(dark);
-                    }
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 100),
-                    height: pressed2
-                        ? size.height * 0.1 - size.width * 0.02
-                        : size.height * 0.1,
-                    width: pressed2
-                        ? size1.width * 0.92 - size.width * 0.02
-                        : size1.width * 0.92,
-                    child: AnimatedContainer(
-                      padding: EdgeInsets.only(
-                          left: size.width * 0.04, right: size.width * 0.04),
-                      alignment: Alignment.centerLeft,
-                      height: size.height * 0.1,
-                      width: size1.width,
-                      duration: Duration(milliseconds: 700),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(size.height * 0.02),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            (dark == 1)
-                                ? Color.fromRGBO(200, 200, 200, 1)
-                                : Color.fromRGBO(120, 120, 120, 1),
-                            (dark == 1)
-                                ? Color.fromRGBO(120, 120, 120, 1)
-                                : Color.fromRGBO(40, 40, 40, 1)
-                          ],
-                        ),
-                      ),
-                      child: Text(
-                        (dark == 1) ? setLightTheme[lang] : setDarkTheme[lang],
-                        style: Theme.of(context)
-                            .primaryTextTheme
-                            .headline1
-                            .copyWith(
-                                fontSize: ScreenUtil().setSp(size.width * 0.07),
-                                color: colorAnimation.value),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: size.height * 0.05,
-              ),
-              Text(
-                language[lang],
-                style: Theme.of(context).primaryTextTheme.headline1.copyWith(
-                    fontSize: ScreenUtil().setSp(size.width * 0.08),
-                    color: color2Animation.value),
-              ),
-              AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                height:
-                    languageSelect ? size.height * 0.47 : size.height * 0.12,
-                width: size1.width,
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      pressed3 = true;
-
-                      languageSelect = !languageSelect;
-                    });
-
-                    if (langSelection) {
-                      setState(() {
-                        langSelection = false;
-                      });
-                    } else {
-                      Future.delayed(Duration(milliseconds: 300), () {
-                        setState(() {
-                          langSelection = true;
-                        });
-                      });
-                    }
-
-                    Future.delayed(Duration(milliseconds: 300), () {
-                      setState(() {
-                        pressed3 = false;
-                      });
-                    });
-                  },
-                  onTapDown: (details) {
-                    if (!langSelection) {
-                      setState(() {
-                        pressed3 = true;
-                      });
-                    }
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      pressed3 = true;
-                    });
-                  },
-                  onLongPressEnd: (details) {
-                    setState(() {
-                      pressed3 = true;
-
-                      languageSelect = !languageSelect;
-                    });
-
-                    if (langSelection) {
-                      setState(() {
-                        langSelection = false;
-                      });
-                    } else {
-                      Future.delayed(Duration(milliseconds: 300), () {
-                        setState(() {
-                          langSelection = true;
-                        });
-                      });
-                    }
-
-                    Future.delayed(Duration(milliseconds: 300), () {
-                      setState(() {
-                        pressed3 = false;
-                      });
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    height: languageSelect
-                        ? size.height * 0.45
-                        : (pressed3
-                            ? size.height * 0.1 - size.width * 0.02
-                            : size.height * 0.1),
-                    width: pressed3
-                        ? size1.width * 0.92 - size.width * 0.02
-                        : size1.width * 0.92,
-                    child: AnimatedContainer(
-                      padding: EdgeInsets.only(
-                          left: size.width * 0.04, right: size.width * 0.04),
-                      alignment: Alignment.topCenter,
-                      height: size.height * 0.1,
-                      width: size1.width,
-                      duration: Duration(milliseconds: 700),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(size.height * 0.02),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            rus
-                                ? Colors.lightBlueAccent
-                                : Colors.redAccent.shade100,
-                            rus ? Colors.blueAccent : Colors.redAccent
-                          ],
-                        ),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            alignment: Alignment.centerLeft,
-                            height: pressed3
-                                ? size.height * 0.1 - size.width * 0.02
-                                : size.height * 0.1,
-                            width: size1.width * 0.92,
-                            child: Text(
-                              language[lang],
-                              style: Theme.of(context)
-                                  .primaryTextTheme
-                                  .headline1
-                                  .copyWith(
-                                      fontSize:
-                                          ScreenUtil().setSp(size.width * 0.07),
-                                      color: colorAnimation.value),
-                            ),
-                          ),
-                          AnimatedContainer(
-                            alignment: Alignment.center,
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            height: languageSelect ? size.height * 0.3 : 0,
-                            child: AnimatedOpacity(
-                              duration: Duration(milliseconds: 500),
-                              opacity: langSelection ? 1 : 0,
-                              child: Container(
-                                height: size.height * 0.28,
-                                width: size1.width,
-                                alignment: Alignment.center,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
+                            AnimatedContainer(
+                              alignment: Alignment.center,
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              height: themeSelect ? size.height * 0.45 : 0,
+                              width: size.height * 0.45,
+                              child: AnimatedOpacity(
+                                duration: Duration(milliseconds: 300),
+                                opacity: selection ? 1 : 0,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: <Widget>[
-                                    GestureDetector(
-                                      onTap: () {
-                                        if (langSelection) {
-                                          setState(() {
-                                            rus = false;
-                                            lang = 1;
-                                            saveLangState(lang);
-                                          });
-                                        }
-                                      },
-                                      child: Stack(
-                                        alignment: Alignment.centerLeft,
-                                        children: [
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                            height: size.height * 0.09,
-                                            width: !rus
-                                                ? size1.width * 0.8
-                                                : size.height * 0.085,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.height * 0.1 / 2),
-                                              color:
-                                                  Colors.white.withOpacity(0.3),
+                                    AnimatedContainer(
+                                      duration: Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                      width: (t == 5 || t == 4)
+                                          ? size.width * 0.3
+                                          : size.width * 0.2,
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: <Widget>[
+                                          SizedBox(
+                                            height: size.width * 0.04,
+                                          ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              if (selection) {
+                                                setState(() {
+                                                  t = 5;
+                                                  theme = 5;
+                                                });
+                                                saveThemeState(5);
+                                                print(theme);
+                                              }
+                                            },
+                                            child: AnimatedContainer(
+                                              height: (t == 5)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              width: (t == 5)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              duration:
+                                                  Duration(milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular((t ==
+                                                            5)
+                                                        ? size.width * 0.3 / 2
+                                                        : size.width * 0.2 / 2),
+                                                border: Border.all(
+                                                    color: Colors.white,
+                                                    width: 3),
+                                                gradient: LinearGradient(
+                                                    begin: Alignment.bottomLeft,
+                                                    end: Alignment.topRight,
+                                                    colors: [
+                                                      bottomLeftColor[5],
+                                                      topRightColor[5]
+                                                    ]),
+                                              ),
                                             ),
                                           ),
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 300),
-                                            height: size.height * 0.09,
-                                            width: size1.width * 0.8,
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  color: Colors.white,
-                                                  width: !rus ? 4 : 2),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.height * 0.1 / 2),
+                                          GestureDetector(
+                                            onTap: () {
+                                              if (selection) {
+                                                setState(() {
+                                                  t = 4;
+                                                  theme = 4;
+                                                });
+                                                saveThemeState(4);
+                                                print(theme);
+                                              }
+                                            },
+                                            child: AnimatedContainer(
+                                              height: (t == 4)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              width: (t == 4)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              duration:
+                                                  Duration(milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular((t ==
+                                                            4)
+                                                        ? size.width * 0.3 / 2
+                                                        : size.width * 0.2 / 2),
+                                                border: Border.all(
+                                                    color: Colors.white,
+                                                    width: 3),
+                                                gradient: LinearGradient(
+                                                    begin: Alignment.bottomLeft,
+                                                    end: Alignment.topRight,
+                                                    colors: [
+                                                      bottomLeftColor[4],
+                                                      topRightColor[4]
+                                                    ]),
+                                              ),
                                             ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                              children: <Widget>[
-                                                Container(
-                                                  height: size.height * 0.09,
-                                                  width: size.height * 0.085,
-                                                  decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              size.height *
-                                                                  0.1 /
-                                                                  2),
-                                                      color: Colors.white,
-                                                      image: DecorationImage(
-                                                        image: AssetImage(
-                                                            'assets/images/english.png'),
-                                                        fit: BoxFit.cover,
-                                                      )),
-                                                ),
-                                                SizedBox(
-                                                  width: size.width * 0.05,
-                                                ),
-                                                Text('English',
-                                                    style: Theme.of(context)
-                                                        .primaryTextTheme
-                                                        .headline1
-                                                        .copyWith(
-                                                            fontSize: ScreenUtil()
-                                                                .setSp(
-                                                                    size.width *
-                                                                        0.095),
-                                                            fontWeight: !rus
-                                                                ? FontWeight
-                                                                    .w300
-                                                                : FontWeight
-                                                                    .w200))
-                                              ],
+                                          ),
+                                          SizedBox(
+                                            height: size.width * 0.04,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    AnimatedContainer(
+                                      duration: Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                      width: (t == 0 || t == 3)
+                                          ? size.width * 0.3
+                                          : size.width * 0.2,
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: <Widget>[
+                                          GestureDetector(
+                                            onTap: () {
+                                              if (selection) {
+                                                setState(() {
+                                                  t = 0;
+                                                  theme = 0;
+                                                });
+                                                saveThemeState(0);
+                                                print(theme);
+                                              }
+                                            },
+                                            child: AnimatedContainer(
+                                              height: (t == 0)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              width: (t == 0)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              duration:
+                                                  Duration(milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular((t ==
+                                                            0)
+                                                        ? size.width * 0.3 / 2
+                                                        : size.width * 0.2 / 2),
+                                                border: Border.all(
+                                                    color: Colors.white,
+                                                    width: 3),
+                                                gradient: LinearGradient(
+                                                    begin: Alignment.bottomLeft,
+                                                    end: Alignment.topRight,
+                                                    colors: [
+                                                      bottomLeftColor[0],
+                                                      topRightColor[0]
+                                                    ]),
+                                              ),
+                                            ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              if (selection) {
+                                                setState(() {
+                                                  t = 3;
+                                                  theme = 3;
+                                                });
+                                                saveThemeState(3);
+                                                print(theme);
+                                              }
+                                            },
+                                            child: AnimatedContainer(
+                                              height: (t == 3)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              width: (t == 3)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              duration:
+                                                  Duration(milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular((t ==
+                                                            3)
+                                                        ? size.width * 0.3 / 2
+                                                        : size.width * 0.2 / 2),
+                                                border: Border.all(
+                                                    color: Colors.white,
+                                                    width: 3),
+                                                gradient: LinearGradient(
+                                                    begin: Alignment.bottomLeft,
+                                                    end: Alignment.topRight,
+                                                    colors: [
+                                                      bottomLeftColor[3],
+                                                      topRightColor[3]
+                                                    ]),
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    SizedBox(
-                                      height: size.height * 0.03,
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        if (langSelection) {
-                                          setState(() {
-                                            rus = true;
-                                            lang = 0;
-                                            saveLangState(lang);
-                                          });
-                                        }
-                                      },
-                                      child: Stack(
-                                        alignment: Alignment.centerLeft,
-                                        children: [
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 300),
-                                            curve: Curves.easeInOut,
-                                            height: size.height * 0.09,
-                                            width: rus
-                                                ? size1.width * 0.8
-                                                : size.height * 0.085,
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.height * 0.1 / 2),
-                                              color:
-                                                  Colors.white.withOpacity(0.3),
+                                    AnimatedContainer(
+                                      duration: Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                      width: (t == 1 || t == 2)
+                                          ? size.width * 0.3
+                                          : size.width * 0.2,
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: <Widget>[
+                                          SizedBox(
+                                            height: size.width * 0.04,
+                                          ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              if (selection) {
+                                                setState(() {
+                                                  t = 1;
+                                                  theme = 1;
+                                                });
+                                                saveThemeState(1);
+                                                print(theme);
+                                              }
+                                            },
+                                            child: AnimatedContainer(
+                                              height: (t == 1)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              width: (t == 1)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              duration:
+                                                  Duration(milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular((t ==
+                                                            1)
+                                                        ? size.width * 0.3 / 2
+                                                        : size.width * 0.2 / 2),
+                                                border: Border.all(
+                                                    color: Colors.white,
+                                                    width: 3),
+                                                gradient: LinearGradient(
+                                                    begin: Alignment.bottomLeft,
+                                                    end: Alignment.topRight,
+                                                    colors: [
+                                                      bottomLeftColor[1],
+                                                      topRightColor[1]
+                                                    ]),
+                                              ),
                                             ),
                                           ),
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 300),
-                                            height: size.height * 0.09,
-                                            width: size1.width * 0.8,
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  color: Colors.white,
-                                                  width: rus ? 4 : 2),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.height * 0.1 / 2),
+                                          GestureDetector(
+                                            onTap: () {
+                                              if (selection) {
+                                                setState(() {
+                                                  t = 2;
+                                                  theme = 2;
+                                                });
+                                                saveThemeState(2);
+                                                print(theme);
+                                              }
+                                            },
+                                            child: AnimatedContainer(
+                                              height: (t == 2)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              width: (t == 2)
+                                                  ? size.width * 0.3
+                                                  : size.width * 0.2,
+                                              duration:
+                                                  Duration(milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular((t ==
+                                                            2)
+                                                        ? size.width * 0.3 / 2
+                                                        : size.width * 0.2 / 2),
+                                                border: Border.all(
+                                                    color: Colors.white,
+                                                    width: 3),
+                                                gradient: LinearGradient(
+                                                    begin: Alignment.bottomLeft,
+                                                    end: Alignment.topRight,
+                                                    colors: [
+                                                      bottomLeftColor[2],
+                                                      topRightColor[2]
+                                                    ]),
+                                              ),
                                             ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                              children: <Widget>[
-                                                Container(
-                                                  height: size.height * 0.09,
-                                                  width: size.height * 0.085,
-                                                  decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              size.height *
-                                                                  0.1 /
-                                                                  2),
-                                                      color: Colors.white,
-                                                      image: DecorationImage(
-                                                        image: AssetImage(
-                                                            'assets/images/russian.png'),
-                                                        fit: BoxFit.cover,
-                                                      )),
-                                                ),
-                                                SizedBox(
-                                                  width: size.width * 0.05,
-                                                ),
-                                                Text('Русский',
-                                                    style: Theme.of(context)
-                                                        .primaryTextTheme
-                                                        .headline1
-                                                        .copyWith(
-                                                            fontSize: ScreenUtil()
-                                                                .setSp(
-                                                                    size.width *
-                                                                        0.095),
-                                                            fontWeight: rus
-                                                                ? FontWeight
-                                                                    .w300
-                                                                : FontWeight
-                                                                    .w200))
-                                              ],
-                                            ),
+                                          ),
+                                          SizedBox(
+                                            height: size.width * 0.04,
                                           ),
                                         ],
                                       ),
@@ -1358,39 +1006,482 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(
-                height: size.height * 0.05,
-              ),
-              Text(
-                masterPassSettings[lang],
-                style: Theme.of(context).primaryTextTheme.headline1.copyWith(
-                    fontSize: ScreenUtil().setSp(size.width * 0.08),
-                    color: color2Animation.value),
-              ),
-              AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                height: changePass ? size.height * 0.82 : size.height * 0.12,
-                width: size1.width,
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      pressed4 = true;
-
-                      changePass = !changePass;
-                    });
-
-                    if (passChanging) {
+                Container(
+                  height: size.height * 0.12,
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () {
                       setState(() {
-                        passChanging = false;
+                        pressed2 = true;
+                      });
+
+                      if (dark == 0) {
+                        setState(() {
+                          dark = 1;
+                        });
+                        colorController.forward();
+                        color2Controller.forward();
+                        saveDarkThemeState(dark);
+                      } else {
+                        setState(() {
+                          dark = 0;
+                        });
+                        colorController.reverse();
+                        color2Controller.reverse();
+                        saveDarkThemeState(dark);
+                      }
+
+                      Future.delayed(Duration(milliseconds: 200), () {
+                        setState(() {
+                          pressed2 = false;
+                        });
+                      });
+                    },
+                    onTapDown: (details) {
+                      setState(() {
+                        pressed2 = true;
+                      });
+                    },
+                    onLongPress: () {
+                      setState(() {
+                        pressed2 = true;
+                      });
+                    },
+                    onLongPressEnd: (details) {
+                      setState(() {
+                        pressed2 = false;
+                      });
+
+                      if (dark == 0) {
+                        setState(() {
+                          dark = 1;
+                        });
+                        colorController.forward();
+                        color2Controller.forward();
+                        saveDarkThemeState(dark);
+                      } else {
+                        setState(() {
+                          dark = 0;
+                        });
+                        colorController.reverse();
+                        color2Controller.reverse();
+                        saveDarkThemeState(dark);
+                      }
+                    },
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 100),
+                      height: pressed2
+                          ? size.height * 0.1 - size.width * 0.02
+                          : size.height * 0.1,
+                      width: pressed2
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.centerLeft,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              (dark == 1)
+                                  ? Color.fromRGBO(200, 200, 200, 1)
+                                  : Color.fromRGBO(120, 120, 120, 1),
+                              (dark == 1)
+                                  ? Color.fromRGBO(120, 120, 120, 1)
+                                  : Color.fromRGBO(40, 40, 40, 1)
+                            ],
+                          ),
+                        ),
+                        child: Text(
+                          (dark == 1)
+                              ? setLightTheme[lang]
+                              : setDarkTheme[lang],
+                          style: Theme.of(context)
+                              .primaryTextTheme
+                              .headline1
+                              .copyWith(
+                                  fontSize:
+                                      ScreenUtil().setSp(size.width * 0.07),
+                                  color: colorAnimation.value),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: size.height * 0.05,
+                ),
+                Text(
+                  language[lang],
+                  style: Theme.of(context).primaryTextTheme.headline1.copyWith(
+                      fontSize: ScreenUtil().setSp(size.width * 0.08),
+                      color: color2Animation.value),
+                ),
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  height:
+                      languageSelect ? size.height * 0.47 : size.height * 0.12,
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        pressed3 = true;
+
+                        languageSelect = !languageSelect;
+                      });
+
+                      if (langSelection) {
+                        setState(() {
+                          langSelection = false;
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            langSelection = true;
+                          });
+                        });
+                      }
+
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        setState(() {
+                          pressed3 = false;
+                        });
+                      });
+                    },
+                    onTapDown: (details) {
+                      setState(() {
+                        pressed3 = true;
+                      });
+                    },
+                    onLongPress: () {
+                      setState(() {
+                        pressed3 = true;
+                      });
+                    },
+                    onLongPressEnd: (details) {
+                      setState(() {
+                        pressed3 = true;
+
+                        languageSelect = !languageSelect;
+                      });
+
+                      if (langSelection) {
+                        setState(() {
+                          langSelection = false;
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            langSelection = true;
+                          });
+                        });
+                      }
+
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        setState(() {
+                          pressed3 = false;
+                        });
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      height: languageSelect
+                          ? size.height * 0.45
+                          : (pressed3
+                              ? size.height * 0.1 - size.width * 0.02
+                              : size.height * 0.1),
+                      width: pressed3
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.topCenter,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              rus
+                                  ? Colors.lightBlueAccent
+                                  : Colors.redAccent.shade100,
+                              rus ? Colors.blueAccent : Colors.redAccent
+                            ],
+                          ),
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              alignment: Alignment.centerLeft,
+                              height: pressed3
+                                  ? size.height * 0.1 - size.width * 0.02
+                                  : size.height * 0.1,
+                              width: size1.width * 0.92,
+                              child: Text(
+                                language[lang],
+                                style: Theme.of(context)
+                                    .primaryTextTheme
+                                    .headline1
+                                    .copyWith(
+                                        fontSize: ScreenUtil()
+                                            .setSp(size.width * 0.07),
+                                        color: colorAnimation.value),
+                              ),
+                            ),
+                            AnimatedContainer(
+                              alignment: Alignment.center,
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              height: languageSelect ? size.height * 0.3 : 0,
+                              child: AnimatedOpacity(
+                                duration: Duration(milliseconds: 500),
+                                opacity: langSelection ? 1 : 0,
+                                child: Container(
+                                  height: size.height * 0.28,
+                                  width: size1.width,
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: <Widget>[
+                                      GestureDetector(
+                                        onTap: () {
+                                          if (langSelection) {
+                                            setState(() {
+                                              rus = false;
+                                              lang = 1;
+                                              saveLangState(lang);
+                                            });
+                                          }
+                                        },
+                                        child: Stack(
+                                          alignment: Alignment.centerLeft,
+                                          children: [
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                              height: size.height * 0.09,
+                                              width: !rus
+                                                  ? size1.width * 0.8
+                                                  : size.height * 0.085,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        size.height * 0.1 / 2),
+                                                color: Colors.white
+                                                    .withOpacity(0.3),
+                                              ),
+                                            ),
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 300),
+                                              height: size.height * 0.09,
+                                              width: size1.width * 0.8,
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color: Colors.white,
+                                                    width: !rus ? 4 : 2),
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        size.height * 0.1 / 2),
+                                              ),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.start,
+                                                children: <Widget>[
+                                                  Container(
+                                                    height: size.height * 0.09,
+                                                    width: size.height * 0.085,
+                                                    decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                                    size.height *
+                                                                        0.1 /
+                                                                        2),
+                                                        color: Colors.white,
+                                                        image: DecorationImage(
+                                                          image: AssetImage(
+                                                              'assets/images/english.png'),
+                                                          fit: BoxFit.cover,
+                                                        )),
+                                                  ),
+                                                  SizedBox(
+                                                    width: size.width * 0.05,
+                                                  ),
+                                                  Text('English',
+                                                      style: Theme.of(context)
+                                                          .primaryTextTheme
+                                                          .headline1
+                                                          .copyWith(
+                                                              fontSize: ScreenUtil()
+                                                                  .setSp(
+                                                                      size.width *
+                                                                          0.095),
+                                                              fontWeight: !rus
+                                                                  ? FontWeight
+                                                                      .w300
+                                                                  : FontWeight
+                                                                      .w200))
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: size.height * 0.03,
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          if (langSelection) {
+                                            setState(() {
+                                              rus = true;
+                                              lang = 0;
+                                              saveLangState(lang);
+                                            });
+                                          }
+                                        },
+                                        child: Stack(
+                                          alignment: Alignment.centerLeft,
+                                          children: [
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 300),
+                                              curve: Curves.easeInOut,
+                                              height: size.height * 0.09,
+                                              width: rus
+                                                  ? size1.width * 0.8
+                                                  : size.height * 0.085,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        size.height * 0.1 / 2),
+                                                color: Colors.white
+                                                    .withOpacity(0.3),
+                                              ),
+                                            ),
+                                            AnimatedContainer(
+                                              duration:
+                                                  Duration(milliseconds: 300),
+                                              height: size.height * 0.09,
+                                              width: size1.width * 0.8,
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color: Colors.white,
+                                                    width: rus ? 4 : 2),
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        size.height * 0.1 / 2),
+                                              ),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.start,
+                                                children: <Widget>[
+                                                  Container(
+                                                    height: size.height * 0.09,
+                                                    width: size.height * 0.085,
+                                                    decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                                    size.height *
+                                                                        0.1 /
+                                                                        2),
+                                                        color: Colors.white,
+                                                        image: DecorationImage(
+                                                          image: AssetImage(
+                                                              'assets/images/russian.png'),
+                                                          fit: BoxFit.cover,
+                                                        )),
+                                                  ),
+                                                  SizedBox(
+                                                    width: size.width * 0.05,
+                                                  ),
+                                                  Text('Русский',
+                                                      style: Theme.of(context)
+                                                          .primaryTextTheme
+                                                          .headline1
+                                                          .copyWith(
+                                                              fontSize: ScreenUtil()
+                                                                  .setSp(
+                                                                      size.width *
+                                                                          0.095),
+                                                              fontWeight: rus
+                                                                  ? FontWeight
+                                                                      .w300
+                                                                  : FontWeight
+                                                                      .w200))
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: size.height * 0.05,
+                ),
+                Text(
+                  masterPassSettings[lang],
+                  style: Theme.of(context).primaryTextTheme.headline1.copyWith(
+                      fontSize: ScreenUtil().setSp(size.width * 0.08),
+                      color: color2Animation.value),
+                ),
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  height: changePass ? size.height * 0.82 : size.height * 0.12,
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        pressed4 = true;
+
+                        changePass = !changePass;
+
+                        signInField = false;
+                        resetField = false;
+
+                        signingIn = false;
+                        resetting = false;
 
                         active1 = false;
                         width1 = size.width * 0.75;
@@ -1404,633 +1495,589 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
 
                         text = '';
                       });
-                    } else {
+
+                      if (passChanging) {
+                        setState(() {
+                          passChanging = false;
+
+                          active1 = false;
+                          width1 = size.width * 0.75;
+                          color1 = Colors.white;
+                          active2 = false;
+                          width2 = size.width * 0.75;
+                          color3 = Colors.white;
+                          active3 = false;
+                          width3 = size.width * 0.75;
+                          color3 = Colors.white;
+
+                          text = '';
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            passChanging = true;
+                          });
+                        });
+                      }
+
                       Future.delayed(Duration(milliseconds: 300), () {
                         setState(() {
-                          passChanging = true;
+                          pressed4 = false;
                         });
                       });
-                    }
-
-                    Future.delayed(Duration(milliseconds: 300), () {
-                      setState(() {
-                        pressed4 = false;
-                      });
-                    });
-                  },
-                  onTapDown: (details) {
-                    if (!passChanging) {
+                    },
+                    onTapDown: (details) {
                       setState(() {
                         pressed4 = true;
                       });
-                    }
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      pressed4 = true;
-                    });
-                  },
-                  onLongPressEnd: (details) {
-                    setState(() {
-                      pressed4 = true;
-
-                      changePass = !changePass;
-                    });
-
-                    if (passChanging) {
+                    },
+                    onLongPress: () {
                       setState(() {
-                        passChanging = false;
-
-                        active1 = false;
-                        width1 = size.width * 0.75;
-                        color1 = Colors.white;
-                        active2 = false;
-                        width2 = size.width * 0.75;
-                        color3 = Colors.white;
-                        active3 = false;
-                        width3 = size.width * 0.75;
-                        color3 = Colors.white;
-
-                        text = '';
+                        pressed4 = true;
                       });
-                    } else {
+                    },
+                    onLongPressEnd: (details) {
+                      setState(() {
+                        pressed4 = true;
+
+                        changePass = !changePass;
+                      });
+
+                      if (passChanging) {
+                        setState(() {
+                          passChanging = false;
+
+                          active1 = false;
+                          width1 = size.width * 0.75;
+                          color1 = Colors.white;
+                          active2 = false;
+                          width2 = size.width * 0.75;
+                          color3 = Colors.white;
+                          active3 = false;
+                          width3 = size.width * 0.75;
+                          color3 = Colors.white;
+
+                          text = '';
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            passChanging = true;
+                          });
+                        });
+                      }
+
                       Future.delayed(Duration(milliseconds: 300), () {
                         setState(() {
-                          passChanging = true;
+                          pressed4 = false;
                         });
                       });
-                    }
-
-                    Future.delayed(Duration(milliseconds: 300), () {
-                      setState(() {
-                        pressed4 = false;
-                      });
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    height: changePass
-                        ? size.height * 0.8
-                        : (pressed4
-                            ? size.height * 0.1 - size.width * 0.02
-                            : size.height * 0.1),
-                    width: pressed4
-                        ? size1.width * 0.92 - size.width * 0.02
-                        : size1.width * 0.92,
+                    },
                     child: AnimatedContainer(
-                      padding: EdgeInsets.only(
-                          left: size.width * 0.04, right: size.width * 0.04),
-                      alignment: Alignment.topCenter,
-                      height: size.height * 0.1,
-                      width: size1.width,
-                      duration: Duration(milliseconds: 700),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(size.height * 0.02),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [bottomLeftColor[5], topRightColor[5]],
-                        ),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            alignment: Alignment.centerLeft,
-                            height: pressed4
-                                ? size.height * 0.1 - size.width * 0.02
-                                : size.height * 0.1,
-                            width: size1.width * 0.92,
-                            child: Text(
-                              changeMasterPassButton[lang],
-                              style: Theme.of(context)
-                                  .primaryTextTheme
-                                  .headline1
-                                  .copyWith(
-                                      fontSize:
-                                          ScreenUtil().setSp(size.width * 0.07),
-                                      color: colorAnimation.value),
-                            ),
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      height: changePass
+                          ? size.height * 0.8
+                          : (pressed4
+                              ? size.height * 0.1 - size.width * 0.02
+                              : size.height * 0.1),
+                      width: pressed4
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.topCenter,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [bottomLeftColor[5], topRightColor[5]],
                           ),
-                          AnimatedContainer(
-                            alignment: Alignment.center,
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            height: changePass ? size.height * 0.7 : 0,
-                            child: AnimatedOpacity(
-                              duration: Duration(milliseconds: 500),
-                              opacity: passChanging ? 1 : 0,
-                              child: Container(
-                                height: size.height * 0.65,
-                                width: size1.width,
-                                alignment: Alignment.center,
-                                child: Column(
-                                  children: <Widget>[
-                                    AnimatedContainer(
-                                      padding: EdgeInsets.only(
-                                          left: size.width * 0.05,
-                                          right: size.width * 0.05),
-                                      alignment: Alignment.centerLeft,
-                                      duration: Duration(milliseconds: 500),
-                                      curve: Curves.easeInOut,
-                                      height: size.height * 0.09,
-                                      width: width1,
-                                      decoration: BoxDecoration(
-                                          color: color1
-                                              .withOpacity(active1 ? 0.3 : 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                              size.height * 0.1 / 2),
-                                          border: Border.all(
-                                              color: color1, width: 3)),
-                                      child: TextField(
-                                        focusNode: _firstFocus,
-                                        controller: _oldMasterPassController,
-                                        autocorrect: false,
-                                        keyboardType:
-                                            TextInputType.visiblePassword,
-                                        textInputAction: TextInputAction.next,
-                                        obscureText: obs1,
-                                        enabled: true,
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline2
-                                            .copyWith(
-                                                fontSize: ScreenUtil()
-                                                    .setSp(size.width * 0.057)),
-                                        onTap: () {
-                                          setState(() {
-                                            active1 = true;
-                                            width1 = size.width * 0.85;
-                                            active2 = false;
-                                            width2 = size.width * 0.75;
-                                            active3 = false;
-                                            width3 = size.width * 0.75;
-                                          });
-                                        },
-                                        onChanged: (value) {
-                                          color1 = Colors.white;
-                                          color2 = Colors.white;
-                                          color3 = Colors.white;
-
-                                          text = '';
-                                        },
-                                        onSubmitted: (value) {
-                                          fieldFocusChange(context, _firstFocus,
-                                              _secondFocus);
-
-                                          setState(() {
-                                            active1 = false;
-                                            width1 = size.width * 0.75;
-                                            active2 = true;
-                                            width2 = size.width * 0.85;
-                                          });
-                                        },
-                                        cursorColor: Colors.white,
-                                        decoration: InputDecoration(
-                                          suffixIcon: IconButton(
-                                            icon: Icon(
-                                              obs1
-                                                  ? CustomIcons.eye_off
-                                                  : CustomIcons.eye,
-                                              color: Colors.white,
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                obs1 = !obs1;
-                                              });
-                                            },
-                                          ),
-                                          border: InputBorder.none,
-                                          hintText: oldMasterPassField[lang],
-                                          hintStyle: Theme.of(context)
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              alignment: Alignment.centerLeft,
+                              height: pressed4
+                                  ? size.height * 0.1 - size.width * 0.02
+                                  : size.height * 0.1,
+                              width: size1.width * 0.92,
+                              child: Text(
+                                changeMasterPassButton[lang],
+                                style: Theme.of(context)
+                                    .primaryTextTheme
+                                    .headline1
+                                    .copyWith(
+                                        fontSize: ScreenUtil()
+                                            .setSp(size.width * 0.07),
+                                        color: colorAnimation.value),
+                              ),
+                            ),
+                            AnimatedContainer(
+                              alignment: Alignment.center,
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              height: changePass ? size.height * 0.7 : 0,
+                              child: AnimatedOpacity(
+                                duration: Duration(milliseconds: 500),
+                                opacity: passChanging ? 1 : 0,
+                                child: Container(
+                                  height: size.height * 0.65,
+                                  width: size1.width,
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    children: <Widget>[
+                                      AnimatedContainer(
+                                        padding: EdgeInsets.only(
+                                            left: size.width * 0.05,
+                                            right: size.width * 0.05),
+                                        alignment: Alignment.centerLeft,
+                                        duration: Duration(milliseconds: 500),
+                                        curve: Curves.easeInOut,
+                                        height: size.height * 0.09,
+                                        width: width1,
+                                        decoration: BoxDecoration(
+                                            color: color1.withOpacity(
+                                                active1 ? 0.3 : 0.1),
+                                            borderRadius: BorderRadius.circular(
+                                                size.height * 0.1 / 2),
+                                            border: Border.all(
+                                                color: color1, width: 3)),
+                                        child: TextField(
+                                          focusNode: _firstFocus,
+                                          controller: _oldMasterPassController,
+                                          autocorrect: false,
+                                          keyboardType:
+                                              TextInputType.visiblePassword,
+                                          textInputAction: TextInputAction.next,
+                                          obscureText: obs1,
+                                          enabled: true,
+                                          style: Theme.of(context)
                                               .primaryTextTheme
                                               .headline2
                                               .copyWith(
                                                   fontSize: ScreenUtil().setSp(
-                                                      size.width * 0.057),
-                                                  color: Colors.white
-                                                      .withOpacity(0.6)),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: size.height * 0.02,
-                                    ),
-                                    AnimatedContainer(
-                                      padding: EdgeInsets.only(
-                                          left: size.width * 0.05,
-                                          right: size.width * 0.05),
-                                      alignment: Alignment.centerLeft,
-                                      duration: Duration(milliseconds: 500),
-                                      curve: Curves.easeInOut,
-                                      height: size.height * 0.09,
-                                      width: width2,
-                                      decoration: BoxDecoration(
-                                          color: color2
-                                              .withOpacity(active2 ? 0.3 : 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                              size.height * 0.1 / 2),
-                                          border: Border.all(
-                                              color: color2, width: 3)),
-                                      child: TextField(
-                                        focusNode: _secondFocus,
-                                        controller: _newMasterPassController,
-                                        autocorrect: false,
-                                        keyboardType:
-                                            TextInputType.visiblePassword,
-                                        textInputAction: TextInputAction.next,
-                                        obscureText: obs2,
-                                        enabled: true,
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline2
-                                            .copyWith(
-                                                fontSize: ScreenUtil()
-                                                    .setSp(size.width * 0.057)),
-                                        onTap: () {
-                                          setState(() {
-                                            active1 = false;
-                                            width1 = size.width * 0.75;
-                                            active2 = true;
-                                            width2 = size.width * 0.85;
-                                            active3 = false;
-                                            width3 = size.width * 0.75;
-                                          });
-                                        },
-                                        onChanged: (value) {
-                                          color1 = Colors.white;
-                                          color2 = Colors.white;
-                                          color3 = Colors.white;
+                                                      size.width * 0.057)),
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = true;
+                                              width1 = size.width * 0.85;
+                                              active2 = false;
+                                              width2 = size.width * 0.75;
+                                              active3 = false;
+                                              width3 = size.width * 0.75;
+                                            });
+                                          },
+                                          onChanged: (value) {
+                                            color1 = Colors.white;
+                                            color2 = Colors.white;
+                                            color3 = Colors.white;
 
-                                          text = '';
-                                        },
-                                        onSubmitted: (value) {
-                                          fieldFocusChange(context,
-                                              _secondFocus, _thirdFocus);
-                                          setState(() {
-                                            active2 = false;
-                                            width2 = size.width * 0.75;
-                                            active3 = true;
-                                            width3 = size.width * 0.85;
-                                          });
-                                        },
-                                        cursorColor: Colors.white,
-                                        decoration: InputDecoration(
-                                          suffixIcon: IconButton(
-                                            icon: Icon(
-                                              obs2
-                                                  ? CustomIcons.eye_off
-                                                  : CustomIcons.eye,
-                                              color: Colors.white,
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                obs2 = !obs2;
-                                              });
-                                            },
-                                          ),
-                                          border: InputBorder.none,
-                                          hintText: newMasterPassField[lang],
-                                          hintStyle: Theme.of(context)
-                                              .primaryTextTheme
-                                              .headline2
-                                              .copyWith(
-                                                  fontSize: ScreenUtil().setSp(
-                                                      size.width * 0.057),
-                                                  color: Colors.white
-                                                      .withOpacity(0.6)),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: size.height * 0.02,
-                                    ),
-                                    AnimatedContainer(
-                                      padding: EdgeInsets.only(
-                                          left: size.width * 0.05,
-                                          right: size.width * 0.05),
-                                      alignment: Alignment.centerLeft,
-                                      duration: Duration(milliseconds: 500),
-                                      curve: Curves.easeInOut,
-                                      height: size.height * 0.09,
-                                      width: width3,
-                                      decoration: BoxDecoration(
-                                          color: color3
-                                              .withOpacity(active3 ? 0.3 : 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                              size.height * 0.1 / 2),
-                                          border: Border.all(
-                                              color: color3, width: 3)),
-                                      child: TextField(
-                                        focusNode: _thirdFocus,
-                                        controller: _repeatMasterPassController,
-                                        autocorrect: false,
-                                        keyboardType:
-                                            TextInputType.visiblePassword,
-                                        textInputAction: TextInputAction.done,
-                                        obscureText: obs3,
-                                        enabled: true,
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline2
-                                            .copyWith(
-                                                fontSize: ScreenUtil()
-                                                    .setSp(size.width * 0.057)),
-                                        onTap: () {
-                                          setState(() {
-                                            active1 = false;
-                                            width1 = size.width * 0.75;
-                                            active2 = false;
-                                            width2 = size.width * 0.75;
-                                            active3 = true;
-                                            width3 = size.width * 0.85;
-                                          });
-                                        },
-                                        onChanged: (value) {
-                                          color1 = Colors.white;
-                                          color2 = Colors.white;
-                                          color3 = Colors.white;
+                                            text = '';
+                                          },
+                                          onSubmitted: (value) {
+                                            fieldFocusChange(context,
+                                                _firstFocus, _secondFocus);
 
-                                          text = '';
-                                        },
-                                        onSubmitted: (value) {
-                                          setState(() {
-                                            active3 = false;
-                                            width3 = size.width * 0.75;
-                                          });
-                                        },
-                                        cursorColor: Colors.white,
-                                        decoration: InputDecoration(
-                                          suffixIcon: IconButton(
-                                            icon: Icon(
-                                              obs3
-                                                  ? CustomIcons.eye_off
-                                                  : CustomIcons.eye,
-                                              color: Colors.white,
+                                            setState(() {
+                                              active1 = false;
+                                              width1 = size.width * 0.75;
+                                              active2 = true;
+                                              width2 = size.width * 0.85;
+                                            });
+                                          },
+                                          cursorColor: Colors.white,
+                                          decoration: InputDecoration(
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                obs1
+                                                    ? CustomIcons.eye_off
+                                                    : CustomIcons.eye,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: () {
+                                                setState(() {
+                                                  obs1 = !obs1;
+                                                });
+                                              },
                                             ),
-                                            onPressed: () {
-                                              setState(() {
-                                                obs3 = !obs3;
-                                              });
-                                            },
-                                          ),
-                                          border: InputBorder.none,
-                                          hintText: repeatField[lang],
-                                          hintStyle: Theme.of(context)
-                                              .primaryTextTheme
-                                              .headline2
-                                              .copyWith(
-                                                  fontSize: ScreenUtil().setSp(
-                                                      size.width * 0.057),
-                                                  color: Colors.white
-                                                      .withOpacity(0.6)),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: size.height * 0.03,
-                                    ),
-                                    AnimatedContainer(
-                                      duration: Duration(milliseconds: 200),
-                                      curve: Curves.easeInOut,
-                                      width: size.width,
-                                      height: (text == '')
-                                          ? size.height * 0.058
-                                          : size.height * 0.108,
-                                      alignment: Alignment.center,
-                                      child: AnimatedOpacity(
-                                        duration: Duration(milliseconds: 200),
-                                        opacity: (text == '') ? 0 : 1,
-                                        child: Container(
-                                          padding: EdgeInsets.fromLTRB(
-                                              size.width * 0.04,
-                                              size.height * 0.008,
-                                              size.width * 0.04,
-                                              size.height * 0.008),
-                                          decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.height)),
-                                          child: Text(
-                                            text,
-                                            style: Theme.of(context)
+                                            border: InputBorder.none,
+                                            hintText: oldMasterPassField[lang],
+                                            hintStyle: Theme.of(context)
                                                 .primaryTextTheme
                                                 .headline2
                                                 .copyWith(
-                                                  fontSize: ScreenUtil().setSp(
-                                                      size.width * 0.047),
-                                                  color: Colors.red,
-                                                ),
-                                            textAlign: TextAlign.center,
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.057),
+                                                    color: Colors.white
+                                                        .withOpacity(0.6)),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(
-                                      height: size.height * 0.02,
-                                    ),
-                                    Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        AnimatedContainer(
-                                          duration: Duration(milliseconds: 500),
-                                          curve: Curves.easeInOut,
-                                          height: size.width * 0.25,
-                                          width: size.width * 0.25,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.bottomLeft,
-                                              end: Alignment.topRight,
-                                              colors: [
-                                                Colors.white.withOpacity(0.5),
-                                                Colors.white.withOpacity(0.5)
-                                              ],
-                                            ),
+                                      SizedBox(
+                                        height: size.height * 0.02,
+                                      ),
+                                      AnimatedContainer(
+                                        padding: EdgeInsets.only(
+                                            left: size.width * 0.05,
+                                            right: size.width * 0.05),
+                                        alignment: Alignment.centerLeft,
+                                        duration: Duration(milliseconds: 500),
+                                        curve: Curves.easeInOut,
+                                        height: size.height * 0.09,
+                                        width: width2,
+                                        decoration: BoxDecoration(
+                                            color: color2.withOpacity(
+                                                active2 ? 0.3 : 0.1),
                                             borderRadius: BorderRadius.circular(
-                                                size.width * 0.25 / 2),
-                                          ),
-                                        ),
-                                        AnimatedContainer(
-                                          duration: Duration(milliseconds: 500),
-                                          curve: Curves.easeInOut,
-                                          height: size.width * 0.2,
-                                          width: size.width * 0.2,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.bottomLeft,
-                                              end: Alignment.topRight,
-                                              colors: [
-                                                Colors.white,
-                                                Colors.white
-                                              ],
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                                size.width * 0.2 / 2),
-                                          ),
-                                        ),
-                                        GestureDetector(
+                                                size.height * 0.1 / 2),
+                                            border: Border.all(
+                                                color: color2, width: 3)),
+                                        child: TextField(
+                                          focusNode: _secondFocus,
+                                          controller: _newMasterPassController,
+                                          autocorrect: false,
+                                          keyboardType:
+                                              TextInputType.visiblePassword,
+                                          textInputAction: TextInputAction.next,
+                                          obscureText: obs2,
+                                          enabled: true,
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.057)),
                                           onTap: () {
-                                            changeMasterPass();
+                                            setState(() {
+                                              active1 = false;
+                                              width1 = size.width * 0.75;
+                                              active2 = true;
+                                              width2 = size.width * 0.85;
+                                              active3 = false;
+                                              width3 = size.width * 0.75;
+                                            });
                                           },
+                                          onChanged: (value) {
+                                            color1 = Colors.white;
+                                            color2 = Colors.white;
+                                            color3 = Colors.white;
+
+                                            text = '';
+                                          },
+                                          onSubmitted: (value) {
+                                            fieldFocusChange(context,
+                                                _secondFocus, _thirdFocus);
+                                            setState(() {
+                                              active2 = false;
+                                              width2 = size.width * 0.75;
+                                              active3 = true;
+                                              width3 = size.width * 0.85;
+                                            });
+                                          },
+                                          cursorColor: Colors.white,
+                                          decoration: InputDecoration(
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                obs2
+                                                    ? CustomIcons.eye_off
+                                                    : CustomIcons.eye,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: () {
+                                                setState(() {
+                                                  obs2 = !obs2;
+                                                });
+                                              },
+                                            ),
+                                            border: InputBorder.none,
+                                            hintText: newMasterPassField[lang],
+                                            hintStyle: Theme.of(context)
+                                                .primaryTextTheme
+                                                .headline2
+                                                .copyWith(
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.057),
+                                                    color: Colors.white
+                                                        .withOpacity(0.6)),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: size.height * 0.02,
+                                      ),
+                                      AnimatedContainer(
+                                        padding: EdgeInsets.only(
+                                            left: size.width * 0.05,
+                                            right: size.width * 0.05),
+                                        alignment: Alignment.centerLeft,
+                                        duration: Duration(milliseconds: 500),
+                                        curve: Curves.easeInOut,
+                                        height: size.height * 0.09,
+                                        width: width3,
+                                        decoration: BoxDecoration(
+                                            color: color3.withOpacity(
+                                                active3 ? 0.3 : 0.1),
+                                            borderRadius: BorderRadius.circular(
+                                                size.height * 0.1 / 2),
+                                            border: Border.all(
+                                                color: color3, width: 3)),
+                                        child: TextField(
+                                          focusNode: _thirdFocus,
+                                          controller:
+                                              _repeatMasterPassController,
+                                          autocorrect: false,
+                                          keyboardType:
+                                              TextInputType.visiblePassword,
+                                          textInputAction: TextInputAction.done,
+                                          obscureText: obs3,
+                                          enabled: true,
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.057)),
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = false;
+                                              width1 = size.width * 0.75;
+                                              active2 = false;
+                                              width2 = size.width * 0.75;
+                                              active3 = true;
+                                              width3 = size.width * 0.85;
+                                            });
+                                          },
+                                          onChanged: (value) {
+                                            color1 = Colors.white;
+                                            color2 = Colors.white;
+                                            color3 = Colors.white;
+
+                                            text = '';
+                                          },
+                                          onSubmitted: (value) {
+                                            setState(() {
+                                              active3 = false;
+                                              width3 = size.width * 0.75;
+                                            });
+                                          },
+                                          cursorColor: Colors.white,
+                                          decoration: InputDecoration(
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                obs3
+                                                    ? CustomIcons.eye_off
+                                                    : CustomIcons.eye,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: () {
+                                                setState(() {
+                                                  obs3 = !obs3;
+                                                });
+                                              },
+                                            ),
+                                            border: InputBorder.none,
+                                            hintText: repeatField[lang],
+                                            hintStyle: Theme.of(context)
+                                                .primaryTextTheme
+                                                .headline2
+                                                .copyWith(
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.057),
+                                                    color: Colors.white
+                                                        .withOpacity(0.6)),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: size.height * 0.03,
+                                      ),
+                                      AnimatedContainer(
+                                        duration: Duration(milliseconds: 200),
+                                        curve: Curves.easeInOut,
+                                        width: size.width,
+                                        height: (text == '')
+                                            ? size.height * 0.058
+                                            : size.height * 0.108,
+                                        alignment: Alignment.center,
+                                        child: AnimatedOpacity(
+                                          duration: Duration(milliseconds: 200),
+                                          opacity: (text == '') ? 0 : 1,
                                           child: Container(
+                                            padding: EdgeInsets.fromLTRB(
+                                                size.width * 0.04,
+                                                size.height * 0.008,
+                                                size.width * 0.04,
+                                                size.height * 0.008),
+                                            decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        size.height)),
+                                            child: Text(
+                                              text,
+                                              style: Theme.of(context)
+                                                  .primaryTextTheme
+                                                  .headline2
+                                                  .copyWith(
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.047),
+                                                    color: Colors.red,
+                                                  ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: size.height * 0.02,
+                                      ),
+                                      Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          AnimatedContainer(
+                                            duration:
+                                                Duration(milliseconds: 500),
+                                            curve: Curves.easeInOut,
                                             height: size.width * 0.25,
                                             width: size.width * 0.25,
-                                            color: Colors.transparent,
-                                            alignment: Alignment.center,
-                                            child: RotationTransition(
-                                              turns: Tween(begin: 0.0, end: 1.0)
-                                                  .animate(rotateController),
-                                              child: Container(
-                                                child: Stack(
-                                                  alignment: Alignment.center,
-                                                  children: <Widget>[
-                                                    AnimatedOpacity(
-                                                      duration: Duration(
-                                                          milliseconds: 300),
-                                                      opacity:
-                                                          passChanged ? 0 : 1,
-                                                      child: Icon(
-                                                        CustomIcons.right_open,
-                                                        size: size.width * 0.1,
-                                                        color: buttonColor[5],
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  Colors.white.withOpacity(0.5),
+                                                  Colors.white.withOpacity(0.5)
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      size.width * 0.25 / 2),
+                                            ),
+                                          ),
+                                          AnimatedContainer(
+                                            duration:
+                                                Duration(milliseconds: 500),
+                                            curve: Curves.easeInOut,
+                                            height: size.width * 0.2,
+                                            width: size.width * 0.2,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  Colors.white,
+                                                  Colors.white
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      size.width * 0.2 / 2),
+                                            ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              changeMasterPass();
+                                            },
+                                            child: Container(
+                                              height: size.width * 0.25,
+                                              width: size.width * 0.25,
+                                              color: Colors.transparent,
+                                              alignment: Alignment.center,
+                                              child: RotationTransition(
+                                                turns: Tween(
+                                                        begin: 0.0, end: 1.0)
+                                                    .animate(rotateController),
+                                                child: Container(
+                                                  child: Stack(
+                                                    alignment: Alignment.center,
+                                                    children: <Widget>[
+                                                      AnimatedOpacity(
+                                                        duration: Duration(
+                                                            milliseconds: 300),
+                                                        opacity:
+                                                            passChanged ? 0 : 1,
+                                                        child: Icon(
+                                                          CustomIcons
+                                                              .right_open,
+                                                          size:
+                                                              size.width * 0.1,
+                                                          color: buttonColor[5],
+                                                        ),
                                                       ),
-                                                    ),
-                                                    AnimatedOpacity(
-                                                      duration: Duration(
-                                                          milliseconds: 300),
-                                                      opacity:
-                                                          passChanged ? 1 : 0,
-                                                      child: Icon(
-                                                        Icons.done,
-                                                        size: size.width * 0.1,
-                                                        color: buttonColor[5],
+                                                      AnimatedOpacity(
+                                                        duration: Duration(
+                                                            milliseconds: 300),
+                                                        opacity:
+                                                            passChanged ? 1 : 0,
+                                                        child: Icon(
+                                                          Icons.done,
+                                                          size:
+                                                              size.width * 0.1,
+                                                          color: buttonColor[5],
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(
-                height: size.height * 0.05,
-              ),
-              Text(
-                cloud[lang],
-                style: Theme.of(context).primaryTextTheme.headline1.copyWith(
-                    fontSize: ScreenUtil().setSp(size.width * 0.08),
-                    color: color2Animation.value),
-              ),
-              AnimatedContainer(
-                duration: Duration(milliseconds: loggedIn ? 100 : 300),
-                curve: Curves.easeInOut,
-                height: signInField ? size.height * 0.67 : size.height * 0.12,
-                width: size1.width,
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: () async {
-                    setState(() {
-                      pressed5 = true;
-                    });
-
-                    if (!loggedIn) {
-                      setState(() {
-                        signInField = !signInField;
-                      });
-
-                      if (signingIn) {
-                        setState(() {
-                          signingIn = false;
-
-                          active1 = false;
-                          width1 = size.width * 0.75;
-                          color1 = Colors.white;
-                          active2 = false;
-                          width2 = size.width * 0.75;
-                          color3 = Colors.white;
-                          active3 = false;
-                          width3 = size.width * 0.75;
-                          color3 = Colors.white;
-
-                          text = '';
-                        });
-                      } else {
-                        Future.delayed(Duration(milliseconds: 300), () {
-                          setState(() {
-                            signingIn = true;
-                          });
-                        });
-                      }
-                    } else {
-                      dynamic result = await _auth.signOut();
-
-                      print(result);
-
-                      if (result == null) {
-                        print('can not to log out');
-                      } else {
-                        print('logged out');
-                        setState(() {
-                          loggedIn = false;
-                          saveLoginState(false);
-                        });
-                      }
-
-                      Future.delayed(Duration(milliseconds: 300), () {
-                        setState(() {
-                          anim = false;
-                        });
-                      });
-                    }
-
-                    Future.delayed(Duration(milliseconds: anim ? 200 : 300),
-                        () {
-                      setState(() {
-                        pressed5 = false;
-                      });
-                    });
-                  },
-                  onTapDown: (details) {
-                    if (!signingIn) {
+                SizedBox(
+                  height: size.height * 0.05,
+                ),
+                Text(
+                  cloud[lang],
+                  style: Theme.of(context).primaryTextTheme.headline1.copyWith(
+                      fontSize: ScreenUtil().setSp(size.width * 0.08),
+                      color: color2Animation.value),
+                ),
+                AnimatedContainer(
+                  duration: Duration(milliseconds: loggedIn ? 100 : 300),
+                  curve: Curves.easeInOut,
+                  height: signInField ? size.height * 0.82 : size.height * 0.12,
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () async {
                       setState(() {
                         pressed5 = true;
                       });
-                    }
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      pressed5 = true;
-                    });
-                  },
-                  onLongPressEnd: (details) {
-                    setState(() {
-                      pressed5 = true;
-                    });
 
-                    if (!loggedIn) {
-                      setState(() {
-                        signInField = !signInField;
-                      });
-
-                      if (signingIn) {
+                      if (!loggedIn) {
                         setState(() {
-                          signingIn = false;
+                          signInField = !signInField;
+
+                          changePass = false;
+                          resetField = false;
+
+                          passChanging = false;
+                          resetting = false;
 
                           active1 = false;
                           width1 = size.width * 0.75;
@@ -2044,1087 +2091,1673 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
 
                           text = '';
                         });
+
+                        if (signingIn) {
+                          setState(() {
+                            signingIn = false;
+                          });
+                        } else {
+                          Future.delayed(Duration(milliseconds: 300), () {
+                            setState(() {
+                              signingIn = true;
+                            });
+                          });
+                        }
                       } else {
+                        dynamic result = await _auth.signOut();
+
+                        print(result);
+
+                        if (result == null) {
+                          print('can not to log out');
+                        } else {
+                          print('logged out');
+                          setState(() {
+                            loggedIn = false;
+                            saveLoginState(false);
+                            saveEmail(null);
+                          });
+                        }
+
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
-                            signingIn = true;
+                            anim = false;
                           });
                         });
                       }
-                    }
 
-                    Future.delayed(Duration(milliseconds: anim ? 200 : 300),
-                        () {
-                      setState(() {
-                        pressed5 = false;
+                      Future.delayed(Duration(milliseconds: anim ? 200 : 300),
+                          () {
+                        setState(() {
+                          pressed5 = false;
+                        });
                       });
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: anim ? 100 : 300),
-                    curve: Curves.easeInOut,
-                    height: signInField
-                        ? size.height * 0.65
-                        : (pressed5
-                            ? size.height * 0.1 - size.width * 0.02
-                            : size.height * 0.1),
-                    width: pressed5
-                        ? size1.width * 0.92 - size.width * 0.02
-                        : size1.width * 0.92,
+                    },
+                    onTapDown: (details) {
+                      setState(() {
+                        pressed5 = true;
+                      });
+                    },
+                    onLongPress: () {
+                      setState(() {
+                        pressed5 = true;
+                      });
+                    },
+                    onLongPressEnd: (details) {
+                      setState(() {
+                        pressed5 = true;
+                      });
+
+                      if (!loggedIn) {
+                        setState(() {
+                          signInField = !signInField;
+                        });
+
+                        if (signingIn) {
+                          setState(() {
+                            signingIn = false;
+
+                            active1 = false;
+                            width1 = size.width * 0.75;
+                            color1 = Colors.white;
+                            active2 = false;
+                            width2 = size.width * 0.75;
+                            color3 = Colors.white;
+                            active3 = false;
+                            width3 = size.width * 0.75;
+                            color3 = Colors.white;
+
+                            text = '';
+                          });
+                        } else {
+                          Future.delayed(Duration(milliseconds: 300), () {
+                            setState(() {
+                              signingIn = true;
+                            });
+                          });
+                        }
+                      }
+
+                      Future.delayed(Duration(milliseconds: anim ? 200 : 300),
+                          () {
+                        setState(() {
+                          pressed5 = false;
+                        });
+                      });
+                    },
                     child: AnimatedContainer(
-                      padding: EdgeInsets.only(
-                          left: size.width * 0.04, right: size.width * 0.04),
-                      alignment: Alignment.topCenter,
-                      height: size.height * 0.1,
-                      width: size1.width,
-                      duration: Duration(milliseconds: 700),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(size.height * 0.02),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            loggedIn ? bottomLeftColor[2] : bottomLeftColor[1],
-                            loggedIn ? topRightColor[2] : topRightColor[1]
-                          ],
-                        ),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          AnimatedContainer(
-                            duration: Duration(milliseconds: anim ? 100 : 300),
-                            curve: Curves.easeInOut,
-                            alignment: Alignment.centerLeft,
-                            height: pressed5
-                                ? size.height * 0.1 - size.width * 0.02
-                                : size.height * 0.1,
-                            width: size1.width * 0.92,
-                            child: Text(
-                              anim ? signOutButton[lang] : signInButton[lang],
-                              style: Theme.of(context)
-                                  .primaryTextTheme
-                                  .headline1
-                                  .copyWith(
-                                      fontSize:
-                                          ScreenUtil().setSp(size.width * 0.07),
-                                      color: colorAnimation.value),
-                            ),
+                      duration: Duration(milliseconds: anim ? 100 : 300),
+                      curve: Curves.easeInOut,
+                      height: signInField
+                          ? size.height * 0.8
+                          : (pressed5
+                              ? size.height * 0.1 - size.width * 0.02
+                              : size.height * 0.1),
+                      width: pressed5
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.topCenter,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              loggedIn
+                                  ? bottomLeftColor[2]
+                                  : bottomLeftColor[1],
+                              loggedIn ? topRightColor[2] : topRightColor[1]
+                            ],
                           ),
-                          AnimatedContainer(
-                            alignment: Alignment.center,
-                            duration: Duration(milliseconds: anim ? 100 : 300),
-                            curve: Curves.easeInOut,
-                            height: signInField ? size.height * 0.55 : 0,
-                            child: AnimatedOpacity(
-                              duration: Duration(milliseconds: 500),
-                              opacity: signingIn ? 1 : 0,
-                              child: Container(
-                                height: size.height * 0.50,
-                                width: size1.width,
-                                alignment: Alignment.center,
-                                child: Column(
-                                  children: <Widget>[
-                                    AnimatedContainer(
-                                      padding: EdgeInsets.only(
-                                          left: size.width * 0.05,
-                                          right: size.width * 0.05),
-                                      alignment: Alignment.centerLeft,
-                                      duration: Duration(milliseconds: 500),
-                                      curve: Curves.easeInOut,
-                                      height: size.height * 0.09,
-                                      width: width1,
-                                      decoration: BoxDecoration(
-                                          color: color1
-                                              .withOpacity(active1 ? 0.3 : 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                              size.height * 0.1 / 2),
-                                          border: Border.all(
-                                              color: color1, width: 3)),
-                                      child: TextField(
-                                        focusNode: _emailFocus,
-                                        controller: _emailController,
-                                        autocorrect: false,
-                                        keyboardType:
-                                            TextInputType.emailAddress,
-                                        textInputAction: TextInputAction.next,
-                                        enabled: true,
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline2
-                                            .copyWith(
-                                                fontSize: ScreenUtil()
-                                                    .setSp(size.width * 0.057)),
-                                        onTap: () {
-                                          setState(() {
-                                            active1 = true;
-                                            width1 = size.width * 0.85;
-                                            active2 = false;
-                                            width2 = size.width * 0.75;
-                                          });
-                                        },
-                                        onChanged: (value) {
-                                          color1 = Colors.white;
-                                          color2 = Colors.white;
-
-                                          text = '';
-                                        },
-                                        onSubmitted: (value) {
-                                          fieldFocusChange(context, _emailFocus,
-                                              _masterPassFocus);
-
-                                          setState(() {
-                                            active1 = false;
-                                            width1 = size.width * 0.75;
-                                            active2 = true;
-                                            width2 = size.width * 0.85;
-                                          });
-                                        },
-                                        cursorColor: Colors.white,
-                                        decoration: InputDecoration(
-                                          border: InputBorder.none,
-                                          hintText: emailField[lang],
-                                          hintStyle: Theme.of(context)
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            AnimatedContainer(
+                              duration:
+                                  Duration(milliseconds: anim ? 100 : 300),
+                              curve: Curves.easeInOut,
+                              alignment: Alignment.centerLeft,
+                              height: pressed5
+                                  ? size.height * 0.1 - size.width * 0.02
+                                  : size.height * 0.1,
+                              width: size1.width * 0.92,
+                              child: Text(
+                                anim
+                                    ? signOutButton[lang]
+                                    : (reg
+                                        ? registerButton[lang]
+                                        : signInButton[lang]),
+                                style: Theme.of(context)
+                                    .primaryTextTheme
+                                    .headline1
+                                    .copyWith(
+                                        fontSize: ScreenUtil()
+                                            .setSp(size.width * 0.07),
+                                        color: colorAnimation.value),
+                              ),
+                            ),
+                            AnimatedContainer(
+                              alignment: Alignment.center,
+                              duration:
+                                  Duration(milliseconds: anim ? 100 : 300),
+                              curve: Curves.easeInOut,
+                              height: signInField ? size.height * 0.65 : 0,
+                              child: AnimatedOpacity(
+                                duration: Duration(milliseconds: 500),
+                                opacity: signingIn ? 1 : 0,
+                                child: Container(
+                                  height: size.height * 0.60,
+                                  width: size1.width,
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    children: <Widget>[
+                                      AnimatedContainer(
+                                        padding: EdgeInsets.only(
+                                            left: size.width * 0.05,
+                                            right: size.width * 0.05),
+                                        alignment: Alignment.centerLeft,
+                                        duration: Duration(milliseconds: 500),
+                                        curve: Curves.easeInOut,
+                                        height: size.height * 0.09,
+                                        width: width1,
+                                        decoration: BoxDecoration(
+                                            color: color1.withOpacity(
+                                                active1 ? 0.3 : 0.1),
+                                            borderRadius: BorderRadius.circular(
+                                                size.height * 0.1 / 2),
+                                            border: Border.all(
+                                                color: color1, width: 3)),
+                                        child: TextField(
+                                          focusNode: _emailFocus,
+                                          controller: _emailController,
+                                          autocorrect: false,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          textInputAction: TextInputAction.next,
+                                          enabled: true,
+                                          style: Theme.of(context)
                                               .primaryTextTheme
                                               .headline2
                                               .copyWith(
                                                   fontSize: ScreenUtil().setSp(
-                                                      size.width * 0.057),
-                                                  color: Colors.white
-                                                      .withOpacity(0.6)),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: size.height * 0.02,
-                                    ),
-                                    AnimatedContainer(
-                                      padding: EdgeInsets.only(
-                                          left: size.width * 0.05,
-                                          right: size.width * 0.05),
-                                      alignment: Alignment.centerLeft,
-                                      duration: Duration(milliseconds: 500),
-                                      curve: Curves.easeInOut,
-                                      height: size.height * 0.09,
-                                      width: width2,
-                                      decoration: BoxDecoration(
-                                          color: color2
-                                              .withOpacity(active2 ? 0.3 : 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                              size.height * 0.1 / 2),
-                                          border: Border.all(
-                                              color: color2, width: 3)),
-                                      child: TextField(
-                                        focusNode: _masterPassFocus,
-                                        controller: _masterPassController,
-                                        autocorrect: false,
-                                        keyboardType:
-                                            TextInputType.visiblePassword,
-                                        textInputAction: TextInputAction.done,
-                                        obscureText: obs2,
-                                        enabled: true,
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline2
-                                            .copyWith(
-                                                fontSize: ScreenUtil()
-                                                    .setSp(size.width * 0.057)),
-                                        onTap: () {
-                                          setState(() {
-                                            active1 = false;
-                                            width1 = size.width * 0.75;
-                                            active2 = true;
-                                            width2 = size.width * 0.85;
-                                          });
-                                        },
-                                        onChanged: (value) {
-                                          color1 = Colors.white;
-                                          color2 = Colors.white;
+                                                      size.width * 0.057)),
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = true;
+                                              width1 = size.width * 0.85;
+                                              active2 = false;
+                                              width2 = size.width * 0.75;
+                                            });
+                                          },
+                                          onChanged: (value) {
+                                            color1 = Colors.white;
+                                            color2 = Colors.white;
 
-                                          text = '';
-                                        },
-                                        onSubmitted: (value) {
-                                          setState(() {
-                                            active2 = false;
-                                            width2 = size.width * 0.75;
-                                          });
-                                        },
-                                        cursorColor: Colors.white,
-                                        decoration: InputDecoration(
-                                          suffixIcon: IconButton(
-                                            icon: Icon(
-                                              obs2
-                                                  ? CustomIcons.eye_off
-                                                  : CustomIcons.eye,
-                                              color: Colors.white,
-                                            ),
-                                            onPressed: () {
-                                              setState(() {
-                                                obs2 = !obs2;
-                                              });
-                                            },
-                                          ),
-                                          border: InputBorder.none,
-                                          hintText: masterPassField[lang],
-                                          hintStyle: Theme.of(context)
-                                              .primaryTextTheme
-                                              .headline2
-                                              .copyWith(
-                                                  fontSize: ScreenUtil().setSp(
-                                                      size.width * 0.057),
-                                                  color: Colors.white
-                                                      .withOpacity(0.6)),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: size.height * 0.03,
-                                    ),
-                                    AnimatedContainer(
-                                      duration: Duration(milliseconds: 200),
-                                      curve: Curves.easeInOut,
-                                      width: size.width,
-                                      height: (text == '')
-                                          ? size.height * 0.058
-                                          : size.height * 0.108,
-                                      alignment: Alignment.center,
-                                      child: AnimatedOpacity(
-                                        duration: Duration(milliseconds: 200),
-                                        opacity: (text == '') ? 0 : 1,
-                                        child: Container(
-                                          padding: EdgeInsets.fromLTRB(
-                                              size.width * 0.04,
-                                              size.height * 0.008,
-                                              size.width * 0.04,
-                                              size.height * 0.008),
-                                          decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.height)),
-                                          child: Text(
-                                            text,
-                                            style: Theme.of(context)
+                                            text = '';
+                                          },
+                                          onSubmitted: (value) {
+                                            fieldFocusChange(context,
+                                                _emailFocus, _masterPassFocus);
+
+                                            setState(() {
+                                              active1 = false;
+                                              width1 = size.width * 0.75;
+                                              active2 = true;
+                                              width2 = size.width * 0.85;
+                                            });
+                                          },
+                                          cursorColor: Colors.white,
+                                          decoration: InputDecoration(
+                                            border: InputBorder.none,
+                                            hintText: emailField[lang],
+                                            hintStyle: Theme.of(context)
                                                 .primaryTextTheme
                                                 .headline2
                                                 .copyWith(
-                                                  fontSize: ScreenUtil().setSp(
-                                                      size.width * 0.047),
-                                                  color: Colors.red,
-                                                ),
-                                            textAlign: TextAlign.center,
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.057),
+                                                    color: Colors.white
+                                                        .withOpacity(0.6)),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(
-                                      height: size.height * 0.02,
-                                    ),
-                                    Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        AnimatedContainer(
-                                          duration: Duration(milliseconds: 500),
-                                          curve: Curves.easeInOut,
-                                          height: size.width * 0.25,
-                                          width: size.width * 0.25,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.bottomLeft,
-                                              end: Alignment.topRight,
-                                              colors: [
-                                                Colors.white.withOpacity(0.5),
-                                                Colors.white.withOpacity(0.5)
-                                              ],
-                                            ),
+                                      SizedBox(
+                                        height: size.height * 0.02,
+                                      ),
+                                      AnimatedContainer(
+                                        padding: EdgeInsets.only(
+                                            left: size.width * 0.05,
+                                            right: size.width * 0.05),
+                                        alignment: Alignment.centerLeft,
+                                        duration: Duration(milliseconds: 500),
+                                        curve: Curves.easeInOut,
+                                        height: size.height * 0.09,
+                                        width: width2,
+                                        decoration: BoxDecoration(
+                                            color: color2.withOpacity(
+                                                active2 ? 0.3 : 0.1),
                                             borderRadius: BorderRadius.circular(
-                                                size.width * 0.25 / 2),
-                                          ),
-                                        ),
-                                        AnimatedContainer(
-                                          duration: Duration(milliseconds: 500),
-                                          curve: Curves.easeInOut,
-                                          height: size.width * 0.2,
-                                          width: size.width * 0.2,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.bottomLeft,
-                                              end: Alignment.topRight,
-                                              colors: [
-                                                Colors.white,
-                                                Colors.white
-                                              ],
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                                size.width * 0.2 / 2),
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () async {
-                                            checkMasterPassWhenSignUp();
+                                                size.height * 0.1 / 2),
+                                            border: Border.all(
+                                                color: color2, width: 3)),
+                                        child: TextField(
+                                          focusNode: _masterPassFocus,
+                                          controller: _masterPassController,
+                                          autocorrect: false,
+                                          keyboardType:
+                                              TextInputType.visiblePassword,
+                                          textInputAction: TextInputAction.done,
+                                          obscureText: obs2,
+                                          enabled: true,
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.057)),
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = false;
+                                              width1 = size.width * 0.75;
+                                              active2 = true;
+                                              width2 = size.width * 0.85;
+                                            });
+                                          },
+                                          onChanged: (value) {
+                                            color1 = Colors.white;
+                                            color2 = Colors.white;
 
-                                            Timer.periodic(
-                                                Duration(milliseconds: 50),
-                                                (timer) {
-                                              if (finished) {
+                                            text = '';
+                                          },
+                                          onSubmitted: (value) {
+                                            setState(() {
+                                              active2 = false;
+                                              width2 = size.width * 0.75;
+                                            });
+                                          },
+                                          cursorColor: Colors.white,
+                                          decoration: InputDecoration(
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                obs2
+                                                    ? CustomIcons.eye_off
+                                                    : CustomIcons.eye,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: () {
                                                 setState(() {
-                                                  finished = false;
+                                                  obs2 = !obs2;
                                                 });
-                                                Future.delayed(
-                                                    Duration(milliseconds: 100),
-                                                    () async {
-                                                  if (text == '') {
-                                                    dynamic result =
-                                                        await _auth.signIn(
-                                                            _emailController
-                                                                .text,
-                                                            _masterPassController
-                                                                .text);
+                                              },
+                                            ),
+                                            border: InputBorder.none,
+                                            hintText: cloudPassword[lang],
+                                            hintStyle: Theme.of(context)
+                                                .primaryTextTheme
+                                                .headline2
+                                                .copyWith(
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.057),
+                                                    color: Colors.white
+                                                        .withOpacity(0.6)),
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: EdgeInsets.only(
+                                            left: size.width * 0.08,
+                                            right: size.width * 0.08),
+                                        height: size.height * 0.05,
+                                        width: size1.width,
+                                        alignment: Alignment.centerLeft,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              reg = !reg;
+                                            });
+                                          },
+                                          child: Container(
+                                            child: Text(
+                                              reg
+                                                  ? signInButton[lang]
+                                                  : registerButton[lang],
+                                              style: Theme.of(context)
+                                                  .primaryTextTheme
+                                                  .headline2
+                                                  .copyWith(
+                                                      fontSize:
+                                                          size.width * 0.04,
+                                                      color: Colors.white
+                                                          .withOpacity(0.8)),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      AnimatedContainer(
+                                        duration: Duration(milliseconds: 200),
+                                        curve: Curves.easeInOut,
+                                        width: size.width,
+                                        height: (text == '')
+                                            ? size.height * 0.058
+                                            : size.height * 0.108,
+                                        alignment: Alignment.center,
+                                        child: AnimatedOpacity(
+                                          duration: Duration(milliseconds: 200),
+                                          opacity: (text == '') ? 0 : 1,
+                                          child: Container(
+                                            padding: EdgeInsets.fromLTRB(
+                                                size.width * 0.04,
+                                                size.height * 0.008,
+                                                size.width * 0.04,
+                                                size.height * 0.008),
+                                            decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        size.height)),
+                                            child: Text(
+                                              text,
+                                              style: Theme.of(context)
+                                                  .primaryTextTheme
+                                                  .headline2
+                                                  .copyWith(
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.047),
+                                                    color: Colors.red,
+                                                  ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: size.height * 0.02,
+                                      ),
+                                      Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          AnimatedContainer(
+                                            duration:
+                                                Duration(milliseconds: 500),
+                                            curve: Curves.easeInOut,
+                                            height: size.width * 0.25,
+                                            width: size.width * 0.25,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  Colors.white.withOpacity(0.5),
+                                                  Colors.white.withOpacity(0.5)
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      size.width * 0.25 / 2),
+                                            ),
+                                          ),
+                                          AnimatedContainer(
+                                            duration:
+                                                Duration(milliseconds: 500),
+                                            curve: Curves.easeInOut,
+                                            height: size.width * 0.2,
+                                            width: size.width * 0.2,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  Colors.white,
+                                                  Colors.white
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      size.width * 0.2 / 2),
+                                            ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () async {
+                                              print(reg);
 
-                                                    print(result);
+                                              checkPasswordWhenSignUp();
 
-                                                    print(result);
+                                              if (text == '') {
+                                                if (reg) {
+                                                  String result =
+                                                      await _auth.signUp(
+                                                          _emailController.text,
+                                                          _masterPassController
+                                                              .text);
 
-                                                    if (result == null) {
-                                                      dynamic signUpResult =
-                                                          _auth.signUp(
-                                                              _emailController
-                                                                  .text,
-                                                              _masterPassController
-                                                                  .text);
+                                                  try {
+                                                    result = result
+                                                        .split(']')[1]
+                                                        .substring(1);
+                                                    print(
+                                                        'result is: ' + result);
+
+                                                    setState(() {
+                                                      text = result;
+                                                    });
+                                                  } catch (e) {
+                                                    print(e.toString());
+                                                    print(
+                                                        'result is: ' + result);
+
+                                                    setState(() {
+                                                      text = verifyEmail[lang];
+                                                    });
+                                                  }
+                                                } else {
+                                                  String result =
+                                                      await _auth.signIn(
+                                                          _emailController.text,
+                                                          _masterPassController
+                                                              .text);
+
+                                                  try {
+                                                    result = result
+                                                        .split(']')[1]
+                                                        .substring(1);
+                                                    print(
+                                                        'result is: ' + result);
+
+                                                    setState(() {
+                                                      text = result;
+                                                    });
+                                                  } catch (e) {
+                                                    if (result ==
+                                                        '!emailVerified') {
+                                                      print(e.toString());
+                                                      print('result is: ' +
+                                                          result);
+
+                                                      setState(() {
+                                                        text =
+                                                            verifyEmail[lang];
+                                                      });
+                                                    } else {
+                                                      print(e.toString());
+                                                      print('result is: ' +
+                                                          result);
+
+                                                      User user =
+                                                          await _auth.getUser();
+
+                                                      saveLoginState(true);
+                                                      saveEmail(user.email);
+
+                                                      print(
+                                                          '\n\n> Logged in:\nEmail: ${user.email}\nPassword: secured\n\n');
+
+                                                      //CLOSING
+
+                                                      rotateController1
+                                                          .forward();
+                                                      setState(() {
+                                                        loggedIn = true;
+                                                      });
 
                                                       Future.delayed(
                                                           Duration(
                                                               milliseconds:
-                                                                  100), () {
-                                                        print(signUpResult);
-
-                                                        if (signUpResult ==
-                                                            null) {
-                                                          setState(() {
-                                                            text =
-                                                                couldNotSignIn[
-                                                                    lang];
-                                                          });
-                                                        } else {
-                                                          setState(() {
-                                                            text = verifyEmail[
-                                                                lang];
-                                                          });
-                                                        }
+                                                                  1000), () {
+                                                        setState(() {
+                                                          pressed5 = true;
+                                                          signingIn = false;
+                                                          signInField = false;
+                                                        });
                                                       });
-                                                    } else {
-                                                      User user =
-                                                          await _auth.getUser();
 
-                                                      if (user.emailVerified) {
-                                                        print(
-                                                            'Signed in successfully');
-                                                        print(result);
-
-                                                        saveLoginState(true);
-                                                        saveEmail(
-                                                            _emailController
-                                                                .text);
-
-                                                        //CLOSING
-
-                                                        rotateController1
-                                                            .forward(from: 0.0);
+                                                      Future.delayed(
+                                                          Duration(
+                                                              milliseconds:
+                                                                  1300), () {
                                                         setState(() {
-                                                          loggedIn = true;
+                                                          pressed5 = false;
                                                         });
+                                                      });
 
-                                                        Future.delayed(
-                                                            Duration(
-                                                                milliseconds:
-                                                                    1000), () {
-                                                          setState(() {
-                                                            pressed5 = true;
-                                                            signingIn = false;
-                                                            signInField = false;
-                                                          });
-                                                        });
-
-                                                        Future.delayed(
-                                                            Duration(
-                                                                milliseconds:
-                                                                    1300), () {
-                                                          setState(() {
-                                                            pressed5 = false;
-                                                          });
-                                                        });
-
-                                                        Future.delayed(
-                                                            Duration(
-                                                                milliseconds:
-                                                                    2000), () {
-                                                          rotateController
-                                                              .reverse(
-                                                                  from: 1.0);
-                                                          setState(() {
-                                                            _emailController
-                                                                .text = '';
-                                                            _masterPassController
-                                                                .text = '';
-                                                            anim = true;
-                                                          });
-                                                        });
-                                                      } else {
+                                                      Future.delayed(
+                                                          Duration(
+                                                              milliseconds:
+                                                                  2000), () {
                                                         setState(() {
-                                                          text =
-                                                              verifyEmail[lang];
+                                                          _emailController
+                                                              .text = '';
+                                                          _masterPassController
+                                                              .text = '';
+
+                                                          anim = true;
                                                         });
-                                                      }
+                                                        print(anim);
+                                                      });
                                                     }
-                                                  } else {
-                                                    print('Incorrect password');
                                                   }
-                                                });
+                                                }
                                               }
-                                            });
-                                          },
-                                          child: Container(
-                                            height: size.width * 0.25,
-                                            width: size.width * 0.25,
-                                            color: Colors.transparent,
-                                            alignment: Alignment.center,
-                                            child: RotationTransition(
-                                              turns: Tween(begin: 0.0, end: 1.0)
-                                                  .animate(rotateController1),
-                                              child: Container(
-                                                child: Stack(
-                                                  alignment: Alignment.center,
-                                                  children: <Widget>[
-                                                    AnimatedOpacity(
-                                                      duration: Duration(
-                                                          milliseconds: 300),
-                                                      opacity: loggedIn ? 0 : 1,
-                                                      child: Icon(
-                                                        CustomIcons.right_open,
-                                                        size: size.width * 0.1,
-                                                        color: buttonColor[1],
+                                            },
+                                            child: Container(
+                                              height: size.width * 0.25,
+                                              width: size.width * 0.25,
+                                              color: Colors.transparent,
+                                              alignment: Alignment.center,
+                                              child: RotationTransition(
+                                                turns: Tween(
+                                                        begin: 0.0, end: 1.0)
+                                                    .animate(rotateController1),
+                                                child: Container(
+                                                  child: Stack(
+                                                    alignment: Alignment.center,
+                                                    children: <Widget>[
+                                                      AnimatedOpacity(
+                                                        duration: Duration(
+                                                            milliseconds: 300),
+                                                        opacity:
+                                                            loggedIn ? 0 : 1,
+                                                        child: Icon(
+                                                          CustomIcons
+                                                              .right_open,
+                                                          size:
+                                                              size.width * 0.1,
+                                                          color: buttonColor[1],
+                                                        ),
                                                       ),
-                                                    ),
-                                                    AnimatedOpacity(
-                                                      duration: Duration(
-                                                          milliseconds: 300),
-                                                      opacity: loggedIn ? 1 : 0,
-                                                      child: Icon(
-                                                        Icons.done,
-                                                        size: size.width * 0.1,
-                                                        color: buttonColor[2],
+                                                      AnimatedOpacity(
+                                                        duration: Duration(
+                                                            milliseconds: 300),
+                                                        opacity:
+                                                            loggedIn ? 1 : 0,
+                                                        child: Icon(
+                                                          Icons.done,
+                                                          size:
+                                                              size.width * 0.1,
+                                                          color: buttonColor[2],
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              Container(
-                height: size.height * 0.12,
-                width: size1.width,
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: () async {
-                    if (loggedIn) {
-                      setState(() {
-                        pressed6 = true;
-                      });
+                Container(
+                  height: size.height * 0.12,
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () async {
+                      if (loggedIn) {
+                        setState(() {
+                          pressed6 = true;
+                        });
 
-                      backup();
+                        backup();
 
-                      Future.delayed(Duration(milliseconds: 200), () {
+                        Future.delayed(Duration(milliseconds: 200), () {
+                          setState(() {
+                            pressed6 = false;
+                          });
+                        });
+                      }
+                    },
+                    onTapDown: (details) {
+                      if (loggedIn) {
+                        setState(() {
+                          pressed6 = true;
+                        });
+                      }
+                    },
+                    onLongPress: () {
+                      if (loggedIn) {
+                        setState(() {
+                          pressed6 = true;
+                        });
+                      }
+                    },
+                    onLongPressEnd: (details) {
+                      if (loggedIn) {
                         setState(() {
                           pressed6 = false;
                         });
-                      });
-                    }
-                  },
-                  onTapDown: (details) {
-                    if (loggedIn) {
-                      setState(() {
-                        pressed6 = true;
-                      });
-                    }
-                  },
-                  onLongPress: () {
-                    if (loggedIn) {
-                      setState(() {
-                        pressed6 = true;
-                      });
-                    }
-                  },
-                  onLongPressEnd: (details) {
-                    if (loggedIn) {
-                      setState(() {
-                        pressed6 = false;
-                      });
 
-                      backup();
-                    }
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 100),
-                    height: pressed6
-                        ? size.height * 0.1 - size.width * 0.02
-                        : size.height * 0.1,
-                    width: pressed6
-                        ? size1.width * 0.92 - size.width * 0.02
-                        : size1.width * 0.92,
+                        backup();
+                      }
+                    },
                     child: AnimatedContainer(
-                      padding: EdgeInsets.only(
-                          left: size.width * 0.04, right: size.width * 0.04),
-                      alignment: Alignment.centerLeft,
-                      height: size.height * 0.1,
-                      width: size1.width,
-                      duration: Duration(milliseconds: 700),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(size.height * 0.02),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            loggedIn
-                                ? bottomLeftColor[1]
-                                : Color.fromRGBO(200, 200, 200, 1),
-                            loggedIn
-                                ? topRightColor[1]
-                                : Color.fromRGBO(160, 160, 160, 1)
-                          ],
+                      duration: Duration(milliseconds: 100),
+                      height: pressed6
+                          ? size.height * 0.1 - size.width * 0.02
+                          : size.height * 0.1,
+                      width: pressed6
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.centerLeft,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              loggedIn
+                                  ? bottomLeftColor[1]
+                                  : Color.fromRGBO(200, 200, 200, 1),
+                              loggedIn
+                                  ? topRightColor[1]
+                                  : Color.fromRGBO(160, 160, 160, 1)
+                            ],
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        backupButton[lang],
-                        style: Theme.of(context)
-                            .primaryTextTheme
-                            .headline1
-                            .copyWith(
-                                fontSize: ScreenUtil().setSp(size.width * 0.07),
-                                color: colorAnimation.value),
+                        child: Text(
+                          backupButton[lang],
+                          style: Theme.of(context)
+                              .primaryTextTheme
+                              .headline1
+                              .copyWith(
+                                  fontSize:
+                                      ScreenUtil().setSp(size.width * 0.07),
+                                  color: colorAnimation.value),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              Container(
-                height: size.height * 0.12,
-                width: size1.width,
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: () async {
-                    if (loggedIn) {
-                      setState(() {
-                        pressed7 = true;
-                      });
+                Container(
+                  height: size.height * 0.12,
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () async {
+                      if (loggedIn) {
+                        setState(() {
+                          pressed7 = true;
+                        });
 
-                      //TODO: SYNC
+                        sync();
 
-                      Future.delayed(Duration(milliseconds: 200), () {
+                        Future.delayed(Duration(milliseconds: 200), () {
+                          setState(() {
+                            pressed7 = false;
+                          });
+                        });
+                      }
+                    },
+                    onTapDown: (details) {
+                      if (loggedIn) {
+                        setState(() {
+                          pressed7 = true;
+                        });
+                      }
+                    },
+                    onLongPress: () {
+                      if (loggedIn) {
+                        setState(() {
+                          pressed7 = true;
+                        });
+                      }
+                    },
+                    onLongPressEnd: (details) {
+                      if (loggedIn) {
                         setState(() {
                           pressed7 = false;
                         });
-                      });
-                    }
-                  },
-                  onTapDown: (details) {
-                    if (loggedIn) {
-                      setState(() {
-                        pressed7 = true;
-                      });
-                    }
-                  },
-                  onLongPress: () {
-                    if (loggedIn) {
-                      setState(() {
-                        pressed7 = true;
-                      });
-                    }
-                  },
-                  onLongPressEnd: (details) {
-                    if (loggedIn) {
-                      setState(() {
-                        pressed7 = false;
-                      });
 
-                      //TODO: SYNC
-                    }
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 100),
-                    height: pressed7
-                        ? size.height * 0.1 - size.width * 0.02
-                        : size.height * 0.1,
-                    width: pressed7
-                        ? size1.width * 0.92 - size.width * 0.02
-                        : size1.width * 0.92,
+                        sync();
+                      }
+                    },
                     child: AnimatedContainer(
-                      padding: EdgeInsets.only(
-                          left: size.width * 0.04, right: size.width * 0.04),
-                      alignment: Alignment.centerLeft,
-                      height: size.height * 0.1,
-                      width: size1.width,
-                      duration: Duration(milliseconds: 700),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(size.height * 0.02),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            loggedIn
-                                ? bottomLeftColor[1]
-                                : Color.fromRGBO(200, 200, 200, 1),
-                            loggedIn
-                                ? topRightColor[1]
-                                : Color.fromRGBO(160, 160, 160, 1)
-                          ],
+                      duration: Duration(milliseconds: 100),
+                      height: pressed7
+                          ? size.height * 0.1 - size.width * 0.02
+                          : size.height * 0.1,
+                      width: pressed7
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.centerLeft,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              loggedIn
+                                  ? bottomLeftColor[1]
+                                  : Color.fromRGBO(200, 200, 200, 1),
+                              loggedIn
+                                  ? topRightColor[1]
+                                  : Color.fromRGBO(160, 160, 160, 1)
+                            ],
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        syncButton[lang],
-                        style: Theme.of(context)
-                            .primaryTextTheme
-                            .headline1
-                            .copyWith(
-                            fontSize: ScreenUtil().setSp(size.width * 0.07),
-                            color: colorAnimation.value),
+                        child: Text(
+                          syncButton[lang],
+                          style: Theme.of(context)
+                              .primaryTextTheme
+                              .headline1
+                              .copyWith(
+                                  fontSize:
+                                      ScreenUtil().setSp(size.width * 0.07),
+                                  color: colorAnimation.value),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(
-                height: size.height * 0.05,
-              ),
-              Text(
-                other[lang],
-                style: Theme.of(context).primaryTextTheme.headline1.copyWith(
-                    fontSize: ScreenUtil().setSp(size.width * 0.08),
-                    color: color2Animation.value),
-              ),
-              Container(
-                padding: EdgeInsets.only(
-                    top: size.height * 0.01, bottom: size.height * 0.01),
-                width: size1.width,
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      pressed9 = true;
-
-                      donateWindow = !donateWindow;
-                    });
-
-                    if (donating) {
+                AnimatedContainer(
+                  duration: Duration(milliseconds: loggedIn ? 100 : 300),
+                  curve: Curves.easeInOut,
+                  height: resetField ? size.height * 0.62 : size.height * 0.12,
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () async {
                       setState(() {
-                        donating = false;
+                        pressed8 = true;
+
+                        changePass = false;
+                        signInField = false;
+
+                        passChanging = false;
+                        signingIn = false;
+
+                        active1 = false;
+                        width1 = size.width * 0.75;
+                        color1 = Colors.white;
+                        active2 = false;
+                        width2 = size.width * 0.75;
+                        color3 = Colors.white;
+                        active3 = false;
+                        width3 = size.width * 0.75;
+                        color3 = Colors.white;
+
+                        text = '';
                       });
-                    } else {
-                      Future.delayed(Duration(milliseconds: 300), () {
+
+                      if (!loggedIn) {
                         setState(() {
-                          donating = true;
+                          resetField = !resetField;
+                        });
+
+                        if (resetting) {
+                          setState(() {
+                            resetting = false;
+
+                            active1 = false;
+                            width1 = size.width * 0.75;
+                            color1 = Colors.white;
+                            active2 = false;
+                            width2 = size.width * 0.75;
+                            color3 = Colors.white;
+                            active3 = false;
+                            width3 = size.width * 0.75;
+                            color3 = Colors.white;
+
+                            _emailController.text = '';
+
+                            text = '';
+                          });
+                        } else {
+                          Future.delayed(Duration(milliseconds: 300), () {
+                            setState(() {
+                              resetting = true;
+                            });
+                          });
+                        }
+                      } else {
+                        User user = await _auth.getUser();
+                        _auth.resetPassword(user.email);
+                      }
+
+                      Future.delayed(Duration(milliseconds: anim ? 200 : 300),
+                          () {
+                        setState(() {
+                          pressed8 = false;
                         });
                       });
-                    }
-
-                    Future.delayed(Duration(milliseconds: 300), () {
+                    },
+                    onTapDown: (details) {
                       setState(() {
-                        pressed9 = false;
+                        pressed8 = true;
                       });
-                    });
-                  },
-                  onTapDown: (details) {
-                    if (!donating) {
+                    },
+                    onLongPress: () {
                       setState(() {
-                        pressed9 = true;
+                        pressed8 = true;
                       });
-                    }
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      pressed9 = true;
-                    });
-                  },
-                  onLongPressEnd: (details) {
-                    setState(() {
-                      pressed9 = true;
-
-                      donateWindow = !donateWindow;
-                    });
-
-                    if (donating) {
+                    },
+                    onLongPressEnd: (details) async {
                       setState(() {
-                        donating = false;
+                        pressed8 = true;
+
+                        changePass = false;
+                        signInField = false;
+
+                        passChanging = false;
+                        signingIn = false;
+
+                        active1 = false;
+                        width1 = size.width * 0.75;
+                        color1 = Colors.white;
+                        active2 = false;
+                        width2 = size.width * 0.75;
+                        color3 = Colors.white;
+                        active3 = false;
+                        width3 = size.width * 0.75;
+                        color3 = Colors.white;
+
+                        text = '';
                       });
-                    } else {
-                      Future.delayed(Duration(milliseconds: 300), () {
+
+                      if (!loggedIn) {
                         setState(() {
-                          donating = true;
+                          resetField = !resetField;
+                        });
+
+                        if (resetting) {
+                          setState(() {
+                            resetting = false;
+
+                            active1 = false;
+                            width1 = size.width * 0.75;
+                            color1 = Colors.white;
+                            active2 = false;
+                            width2 = size.width * 0.75;
+                            color3 = Colors.white;
+                            active3 = false;
+                            width3 = size.width * 0.75;
+                            color3 = Colors.white;
+
+                            text = '';
+                          });
+                        } else {
+                          Future.delayed(Duration(milliseconds: 300), () {
+                            setState(() {
+                              resetting = true;
+                            });
+                          });
+                        }
+                      } else {
+                        User user = await _auth.getUser();
+                        _auth.resetPassword(user.email);
+                      }
+
+                      Future.delayed(Duration(milliseconds: anim ? 200 : 300),
+                          () {
+                        setState(() {
+                          pressed8 = false;
                         });
                       });
-                    }
-
-                    Future.delayed(Duration(milliseconds: 300), () {
-                      setState(() {
-                        pressed9 = false;
-                      });
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    height: donateWindow
-                        ? size.height * 0.45
-                        : (pressed9
-                            ? size.height * 0.1 - size.width * 0.02
-                            : size.height * 0.1),
-                    width: pressed9
-                        ? size1.width * 0.92 - size.width * 0.02
-                        : size1.width * 0.92,
+                    },
                     child: AnimatedContainer(
-                      padding: EdgeInsets.only(
-                          left: size.width * 0.04, right: size.width * 0.04),
-                      alignment: Alignment.topCenter,
-                      height: size.height * 0.1,
-                      width: size1.width,
-                      duration: Duration(milliseconds: 700),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(size.height * 0.02),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            Color.fromRGBO(170, 170, 170, 1),
-                            Color.fromRGBO(130, 130, 130, 1)
-                          ],
-                        ),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            alignment: Alignment.centerLeft,
-                            height: pressed9
-                                ? size.height * 0.1 - size.width * 0.02
-                                : size.height * 0.1,
-                            width: size1.width * 0.92,
-                            child: Text(
-                              donate[lang],
-                              style: Theme.of(context)
-                                  .primaryTextTheme
-                                  .headline1
-                                  .copyWith(
-                                      fontSize:
-                                          ScreenUtil().setSp(size.width * 0.07),
-                                      color: colorAnimation.value),
-                            ),
+                      duration: Duration(milliseconds: anim ? 100 : 300),
+                      curve: Curves.easeInOut,
+                      height: resetField
+                          ? size.height * 0.6
+                          : (pressed8
+                              ? size.height * 0.1 - size.width * 0.02
+                              : size.height * 0.1),
+                      width: pressed8
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.topCenter,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              loggedIn
+                                  ? bottomLeftColor[2]
+                                  : bottomLeftColor[1],
+                              loggedIn ? topRightColor[2] : topRightColor[1]
+                            ],
                           ),
-                          AnimatedContainer(
-                            alignment: Alignment.center,
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            height: donateWindow ? size.height * 0.3 : 0,
-                            child: AnimatedOpacity(
-                              duration: Duration(milliseconds: 500),
-                              opacity: donating ? 1 : 0,
-                              child: Container(
-                                height: size.height * 0.28,
-                                width: size1.width,
-                                alignment: Alignment.center,
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            AnimatedContainer(
+                              duration:
+                                  Duration(milliseconds: anim ? 100 : 300),
+                              curve: Curves.easeInOut,
+                              alignment: Alignment.centerLeft,
+                              height: pressed8
+                                  ? size.height * 0.1 - size.width * 0.02
+                                  : size.height * 0.1,
+                              width: size1.width * 0.92,
+                              child: Text(
+                                resetPasswordButton[lang],
+                                style: Theme.of(context)
+                                    .primaryTextTheme
+                                    .headline1
+                                    .copyWith(
+                                        fontSize: ScreenUtil()
+                                            .setSp(size.width * 0.07),
+                                        color: colorAnimation.value),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.only(
-                    top: size.height * 0.01, bottom: size.height * 0.01),
-                width: size1.width,
-                alignment: Alignment.center,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      pressed9 = true;
-
-                      aboutWindow = !aboutWindow;
-                    });
-
-                    if (aboutInfo) {
-                      setState(() {
-                        aboutInfo = false;
-                      });
-                    } else {
-                      Future.delayed(Duration(milliseconds: 300), () {
-                        setState(() {
-                          aboutInfo = true;
-                        });
-                      });
-                    }
-
-                    Future.delayed(Duration(milliseconds: 300), () {
-                      setState(() {
-                        pressed9 = false;
-                      });
-                    });
-                  },
-                  onTapDown: (details) {
-                    if (!aboutInfo) {
-                      setState(() {
-                        pressed9 = true;
-                      });
-                    }
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      pressed9 = true;
-                    });
-                  },
-                  onLongPressEnd: (details) {
-                    setState(() {
-                      pressed9 = true;
-
-                      aboutWindow = !aboutWindow;
-                    });
-
-                    if (aboutInfo) {
-                      setState(() {
-                        aboutInfo = false;
-                      });
-                    } else {
-                      Future.delayed(Duration(milliseconds: 300), () {
-                        setState(() {
-                          aboutInfo = true;
-                        });
-                      });
-                    }
-
-                    Future.delayed(Duration(milliseconds: 300), () {
-                      setState(() {
-                        pressed9 = false;
-                      });
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    height: aboutWindow
-                        ? size.height * 1.05
-                        : (pressed9
-                            ? size.height * 0.1 - size.width * 0.02
-                            : size.height * 0.1),
-                    width: pressed9
-                        ? size1.width * 0.92 - size.width * 0.02
-                        : size1.width * 0.92,
-                    child: AnimatedContainer(
-                      padding: EdgeInsets.only(
-                          left: size.width * 0.04, right: size.width * 0.04),
-                      alignment: Alignment.topCenter,
-                      height: size.height * 0.1,
-                      width: size1.width,
-                      duration: Duration(milliseconds: 700),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(size.height * 0.02),
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          colors: [
-                            Color.fromRGBO(170, 170, 170, 1),
-                            Color.fromRGBO(130, 130, 130, 1)
-                          ],
-                        ),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          AnimatedContainer(
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            alignment: Alignment.centerLeft,
-                            height: pressed9
-                                ? size.height * 0.1 - size.width * 0.02
-                                : size.height * 0.1,
-                            width: size1.width * 0.92,
-                            child: Text(
-                              about[lang],
-                              style: Theme.of(context)
-                                  .primaryTextTheme
-                                  .headline1
-                                  .copyWith(
-                                      fontSize:
-                                          ScreenUtil().setSp(size.width * 0.07),
-                                      color: colorAnimation.value),
-                            ),
-                          ),
-                          AnimatedContainer(
-                            alignment: Alignment.center,
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                            height: aboutWindow ? size.height * 0.9 : 0,
-                            child: AnimatedOpacity(
-                              duration: Duration(milliseconds: 500),
-                              opacity: aboutInfo ? 1 : 0,
-                              child: Container(
-                                height: size.height * 0.9,
-                                width: size1.width,
-                                alignment: Alignment.center,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: <Widget>[
-                                    Container(
-                                      height: size.width * 0.25,
-                                      width: size.width * 0.25,
-                                      decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'assets/images/dev_logo.png'),
-                                          fit: BoxFit.cover,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                            size.width * 0.25 / 2),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.only(
-                                          top: size.height * 0.02),
-                                      child: Text(
-                                        'ELECTRON',
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline1
-                                            .copyWith(
-                                                fontSize: ScreenUtil()
-                                                    .setSp(size.width * 0.08)),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.only(
-                                          top: size.height * 0.02),
-                                      child: Text(
-                                        'is the novice mobile and web developer with 1 year experience and some finished projects, one of which is this app.\n\nOn all questions and issues you can contact with developer by e-mail:\n\nelectron.devf@gmail.com\n',
-                                        softWrap: true,
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context)
-                                            .primaryTextTheme
-                                            .headline1
-                                            .copyWith(
-                                                fontSize: ScreenUtil()
-                                                    .setSp(size.width * 0.06)),
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () async {
-                                        await launch('https://elya.dev');
-                                      },
-                                      child: Container(
-                                        alignment: Alignment.center,
-                                        height: size.height * 0.08,
-                                        width: size.width * 0.7,
+                            AnimatedContainer(
+                              alignment: Alignment.center,
+                              duration:
+                                  Duration(milliseconds: anim ? 100 : 300),
+                              curve: Curves.easeInOut,
+                              height: resetField ? size.height * 0.45 : 0,
+                              child: AnimatedOpacity(
+                                duration: Duration(milliseconds: 500),
+                                opacity: resetting ? 1 : 0,
+                                child: Container(
+                                  height: size.height * 0.40,
+                                  width: size1.width,
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    children: <Widget>[
+                                      AnimatedContainer(
+                                        padding: EdgeInsets.only(
+                                            left: size.width * 0.05,
+                                            right: size.width * 0.05),
+                                        alignment: Alignment.centerLeft,
+                                        duration: Duration(milliseconds: 500),
+                                        curve: Curves.easeInOut,
+                                        height: size.height * 0.09,
+                                        width: width1,
                                         decoration: BoxDecoration(
-                                          color: bgColor[dark],
-                                          borderRadius: BorderRadius.circular(
-                                              size.height * 0.08 / 2),
-                                        ),
-                                        child: ShaderMask(
-                                          blendMode: BlendMode.srcATop,
-                                          shaderCallback: (Rect bounds) {
-                                            return LinearGradient(
-                                              begin: Alignment.bottomLeft,
-                                              end: Alignment.topRight,
-                                              colors: [
-                                                bottomLeftColor[1],
-                                                topRightColor[1]
-                                              ],
-                                            ).createShader(bounds);
+                                            color: color1.withOpacity(
+                                                active1 ? 0.3 : 0.1),
+                                            borderRadius: BorderRadius.circular(
+                                                size.height * 0.1 / 2),
+                                            border: Border.all(
+                                                color: color1, width: 3)),
+                                        child: TextField(
+                                          controller: _emailController,
+                                          autocorrect: false,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          textInputAction: TextInputAction.done,
+                                          enabled: true,
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.057)),
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = true;
+                                              width1 = size.width * 0.85;
+                                              active2 = false;
+                                              width2 = size.width * 0.75;
+                                            });
                                           },
-                                          child: Text(
-                                            'Website',
-                                            style: Theme.of(context)
+                                          onChanged: (value) {
+                                            color1 = Colors.white;
+                                            color2 = Colors.white;
+
+                                            text = '';
+                                          },
+                                          onSubmitted: (value) {
+                                            setState(() {
+                                              active1 = false;
+                                              width1 = size.width * 0.75;
+                                            });
+                                          },
+                                          cursorColor: Colors.white,
+                                          decoration: InputDecoration(
+                                            border: InputBorder.none,
+                                            hintText: emailField[lang],
+                                            hintStyle: Theme.of(context)
                                                 .primaryTextTheme
                                                 .headline2
                                                 .copyWith(
-                                                    color: blackWhiteColor[dark]
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.057),
+                                                    color: Colors.white
                                                         .withOpacity(0.6)),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(
-                                      height: size.height * 0.02,
-                                    ),
-                                    GestureDetector(
-                                      onTap: () async {
-                                        await launch(
-                                            'https://play.google.com/store/apps/dev?id=6575145471832299540');
-                                      },
-                                      child: Container(
+                                      SizedBox(
+                                        height: size.height * 0.04,
+                                      ),
+                                      AnimatedContainer(
+                                        duration: Duration(milliseconds: 200),
+                                        curve: Curves.easeInOut,
+                                        width: size.width,
+                                        height: (text == '')
+                                            ? size.height * 0.058
+                                            : size.height * 0.108,
                                         alignment: Alignment.center,
-                                        height: size.height * 0.08,
-                                        width: size.width * 0.7,
-                                        decoration: BoxDecoration(
-                                          color: bgColor[dark],
-                                          borderRadius: BorderRadius.circular(
-                                              size.height * 0.08 / 2),
-                                        ),
-                                        child: ShaderMask(
-                                          blendMode: BlendMode.srcATop,
-                                          shaderCallback: (Rect bounds) {
-                                            return LinearGradient(
-                                              begin: Alignment.bottomLeft,
-                                              end: Alignment.topRight,
-                                              colors: [
-                                                bottomLeftColor[1],
-                                                topRightColor[1]
-                                              ],
-                                            ).createShader(bounds);
-                                          },
-                                          child: Text(
-                                            'Dev page',
-                                            style: Theme.of(context)
-                                                .primaryTextTheme
-                                                .headline2
-                                                .copyWith(
-                                                    color: blackWhiteColor[dark]
-                                                        .withOpacity(0.6)),
+                                        child: AnimatedOpacity(
+                                          duration: Duration(milliseconds: 200),
+                                          opacity: (text == '') ? 0 : 1,
+                                          child: Container(
+                                            padding: EdgeInsets.fromLTRB(
+                                                size.width * 0.04,
+                                                size.height * 0.008,
+                                                size.width * 0.04,
+                                                size.height * 0.008),
+                                            decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        size.height)),
+                                            child: Text(
+                                              text,
+                                              style: Theme.of(context)
+                                                  .primaryTextTheme
+                                                  .headline2
+                                                  .copyWith(
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.047),
+                                                    color: Colors.red,
+                                                  ),
+                                              textAlign: TextAlign.center,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      SizedBox(
+                                        height: size.height * 0.02,
+                                      ),
+                                      Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          AnimatedContainer(
+                                            duration:
+                                                Duration(milliseconds: 500),
+                                            curve: Curves.easeInOut,
+                                            height: size.width * 0.25,
+                                            width: size.width * 0.25,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  Colors.white.withOpacity(0.5),
+                                                  Colors.white.withOpacity(0.5)
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      size.width * 0.25 / 2),
+                                            ),
+                                          ),
+                                          AnimatedContainer(
+                                            duration:
+                                                Duration(milliseconds: 500),
+                                            curve: Curves.easeInOut,
+                                            height: size.width * 0.2,
+                                            width: size.width * 0.2,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  Colors.white,
+                                                  Colors.white
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      size.width * 0.2 / 2),
+                                            ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () async {
+                                              _auth
+                                                  .resetPassword(
+                                                      _emailController.text)
+                                                  .then((result) {
+                                                print('result is: ' + result.toString());
+
+                                                try {
+                                                  result = result
+                                                      .split(']')[1]
+                                                      .substring(1);
+                                                  print('result is: ' + result);
+
+                                                  setState(() {
+                                                    text = result;
+                                                  });
+                                                } catch (e) {
+                                                  print(e);
+                                                  print(
+                                                      '\n\n[v] password has been changed successfully!\n\n');
+                                                  setState(() {
+                                                    text = verifyEmail[lang];
+                                                  });
+                                                }
+                                              });
+                                            },
+                                            child: Container(
+                                              height: size.width * 0.25,
+                                              width: size.width * 0.25,
+                                              color: Colors.transparent,
+                                              alignment: Alignment.center,
+                                              child: RotationTransition(
+                                                turns: Tween(
+                                                        begin: 0.0, end: 1.0)
+                                                    .animate(rotateController1),
+                                                child: Container(
+                                                  child: Stack(
+                                                    alignment: Alignment.center,
+                                                    children: <Widget>[
+                                                      AnimatedOpacity(
+                                                        duration: Duration(
+                                                            milliseconds: 300),
+                                                        opacity:
+                                                            loggedIn ? 0 : 1,
+                                                        child: Icon(
+                                                          CustomIcons
+                                                              .right_open,
+                                                          size:
+                                                              size.width * 0.1,
+                                                          color: buttonColor[1],
+                                                        ),
+                                                      ),
+                                                      AnimatedOpacity(
+                                                        duration: Duration(
+                                                            milliseconds: 300),
+                                                        opacity:
+                                                            loggedIn ? 1 : 0,
+                                                        child: Icon(
+                                                          Icons.done,
+                                                          size:
+                                                              size.width * 0.1,
+                                                          color: buttonColor[2],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(
-                height: size.height * 0.1,
-              ),
-            ],
+                SizedBox(
+                  height: size.height * 0.05,
+                ),
+                Text(
+                  other[lang],
+                  style: Theme.of(context).primaryTextTheme.headline1.copyWith(
+                      fontSize: ScreenUtil().setSp(size.width * 0.08),
+                      color: color2Animation.value),
+                ),
+                Container(
+                  padding: EdgeInsets.only(
+                      top: size.height * 0.01, bottom: size.height * 0.01),
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        pressed9 = true;
+
+                        donateWindow = !donateWindow;
+                      });
+
+                      if (donating) {
+                        setState(() {
+                          donating = false;
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            donating = true;
+                          });
+                        });
+                      }
+
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        setState(() {
+                          pressed9 = false;
+                        });
+                      });
+                    },
+                    onTapDown: (details) {
+                      if (!donating) {
+                        setState(() {
+                          pressed9 = true;
+                        });
+                      }
+                    },
+                    onLongPress: () {
+                      setState(() {
+                        pressed9 = true;
+                      });
+                    },
+                    onLongPressEnd: (details) {
+                      setState(() {
+                        pressed9 = true;
+
+                        donateWindow = !donateWindow;
+                      });
+
+                      if (donating) {
+                        setState(() {
+                          donating = false;
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            donating = true;
+                          });
+                        });
+                      }
+
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        setState(() {
+                          pressed9 = false;
+                        });
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      height: donateWindow
+                          ? size.height * 0.45
+                          : (pressed9
+                              ? size.height * 0.1 - size.width * 0.02
+                              : size.height * 0.1),
+                      width: pressed9
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.topCenter,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              Color.fromRGBO(170, 170, 170, 1),
+                              Color.fromRGBO(130, 130, 130, 1)
+                            ],
+                          ),
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              alignment: Alignment.centerLeft,
+                              height: pressed9
+                                  ? size.height * 0.1 - size.width * 0.02
+                                  : size.height * 0.1,
+                              width: size1.width * 0.92,
+                              child: Text(
+                                donate[lang],
+                                style: Theme.of(context)
+                                    .primaryTextTheme
+                                    .headline1
+                                    .copyWith(
+                                        fontSize: ScreenUtil()
+                                            .setSp(size.width * 0.07),
+                                        color: colorAnimation.value),
+                              ),
+                            ),
+                            AnimatedContainer(
+                              alignment: Alignment.center,
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              height: donateWindow ? size.height * 0.3 : 0,
+                              child: AnimatedOpacity(
+                                duration: Duration(milliseconds: 500),
+                                opacity: donating ? 1 : 0,
+                                child: Container(
+                                  height: size.height * 0.28,
+                                  width: size1.width,
+                                  alignment: Alignment.center,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.only(
+                      top: size.height * 0.01, bottom: size.height * 0.01),
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        pressed10 = true;
+
+                        aboutWindow = !aboutWindow;
+                      });
+
+                      if (aboutInfo) {
+                        setState(() {
+                          aboutInfo = false;
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            aboutInfo = true;
+                          });
+                        });
+                      }
+
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        setState(() {
+                          pressed10 = false;
+                        });
+                      });
+                    },
+                    onTapDown: (details) {
+                      if (!aboutInfo) {
+                        setState(() {
+                          pressed10 = true;
+                        });
+                      }
+                    },
+                    onLongPress: () {
+                      setState(() {
+                        pressed10 = true;
+                      });
+                    },
+                    onLongPressEnd: (details) {
+                      setState(() {
+                        pressed10 = true;
+
+                        aboutWindow = !aboutWindow;
+                      });
+
+                      if (aboutInfo) {
+                        setState(() {
+                          aboutInfo = false;
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            aboutInfo = true;
+                          });
+                        });
+                      }
+
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        setState(() {
+                          pressed10 = false;
+                        });
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      height: aboutWindow
+                          ? size.height * 1.05
+                          : (pressed10
+                              ? size.height * 0.1 - size.width * 0.02
+                              : size.height * 0.1),
+                      width: pressed10
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.topCenter,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              Color.fromRGBO(170, 170, 170, 1),
+                              Color.fromRGBO(130, 130, 130, 1)
+                            ],
+                          ),
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              alignment: Alignment.centerLeft,
+                              height: pressed10
+                                  ? size.height * 0.1 - size.width * 0.02
+                                  : size.height * 0.1,
+                              width: size1.width * 0.92,
+                              child: Text(
+                                about[lang],
+                                style: Theme.of(context)
+                                    .primaryTextTheme
+                                    .headline1
+                                    .copyWith(
+                                        fontSize: ScreenUtil()
+                                            .setSp(size.width * 0.07),
+                                        color: colorAnimation.value),
+                              ),
+                            ),
+                            AnimatedContainer(
+                              alignment: Alignment.center,
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              height: aboutWindow ? size.height * 0.9 : 0,
+                              child: AnimatedOpacity(
+                                duration: Duration(milliseconds: 500),
+                                opacity: aboutInfo ? 1 : 0,
+                                child: Container(
+                                  height: size.height * 0.9,
+                                  width: size1.width,
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: <Widget>[
+                                      Container(
+                                        height: size.width * 0.25,
+                                        width: size.width * 0.25,
+                                        decoration: BoxDecoration(
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'assets/images/dev_logo.png'),
+                                            fit: BoxFit.cover,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                              size.width * 0.25 / 2),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.only(
+                                            top: size.height * 0.02),
+                                        child: Text(
+                                          'ELECTRON',
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline1
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.08)),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.only(
+                                            top: size.height * 0.02),
+                                        child: Text(
+                                          'is the novice mobile and web developer with 1 year experience and some finished projects, one of which is this app.\n\nOn all questions and issues you can contact with developer by e-mail:\n\nelectron.devf@gmail.com\n',
+                                          softWrap: true,
+                                          textAlign: TextAlign.center,
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline1
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.06)),
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () async {
+                                          await launch('https://elya.dev');
+                                        },
+                                        child: Container(
+                                          alignment: Alignment.center,
+                                          height: size.height * 0.08,
+                                          width: size.width * 0.7,
+                                          decoration: BoxDecoration(
+                                            color: bgColor[dark],
+                                            borderRadius: BorderRadius.circular(
+                                                size.height * 0.08 / 2),
+                                          ),
+                                          child: ShaderMask(
+                                            blendMode: BlendMode.srcATop,
+                                            shaderCallback: (Rect bounds) {
+                                              return LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  bottomLeftColor[1],
+                                                  topRightColor[1]
+                                                ],
+                                              ).createShader(bounds);
+                                            },
+                                            child: Text(
+                                              'Website',
+                                              style: Theme.of(context)
+                                                  .primaryTextTheme
+                                                  .headline2
+                                                  .copyWith(
+                                                      color:
+                                                          blackWhiteColor[dark]
+                                                              .withOpacity(
+                                                                  0.6)),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: size.height * 0.02,
+                                      ),
+                                      GestureDetector(
+                                        onTap: () async {
+                                          await launch(
+                                              'https://play.google.com/store/apps/dev?id=6575145471832299540');
+                                        },
+                                        child: Container(
+                                          alignment: Alignment.center,
+                                          height: size.height * 0.08,
+                                          width: size.width * 0.7,
+                                          decoration: BoxDecoration(
+                                            color: bgColor[dark],
+                                            borderRadius: BorderRadius.circular(
+                                                size.height * 0.08 / 2),
+                                          ),
+                                          child: ShaderMask(
+                                            blendMode: BlendMode.srcATop,
+                                            shaderCallback: (Rect bounds) {
+                                              return LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  bottomLeftColor[1],
+                                                  topRightColor[1]
+                                                ],
+                                              ).createShader(bounds);
+                                            },
+                                            child: Text(
+                                              'Dev page',
+                                              style: Theme.of(context)
+                                                  .primaryTextTheme
+                                                  .headline2
+                                                  .copyWith(
+                                                      color:
+                                                          blackWhiteColor[dark]
+                                                              .withOpacity(
+                                                                  0.6)),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: size.height * 0.1,
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
