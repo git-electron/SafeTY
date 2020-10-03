@@ -6,6 +6,7 @@ var copied = ['Скопировано', 'Copied'];
 
 //check masterpass
 var enterPass = ['Введи свой мастер-пароль', 'Enter your masterpass'];
+var enterMail = ['Введи свою почту', 'Enter your e-mail'];
 
 //set language
 var setLanguage = ['Выбери язык приложения', 'Select the app\nlanguage'];
@@ -15,10 +16,15 @@ var nice = ['Отлично', 'Nice'];
 var nowSetTheme = ['Теперь выбери тему', 'Now select a theme'];
 var setTheme = ['Выбери тему', 'Select a theme'];
 
-//set masterpass
+//create account
 var awesome = ['Круто', 'Awesome'];
-var setPass = ['Теперь придумай мастер-пароль', 'Now create your masterpass'];
-var aboutPass = ['Ты будешь применять его для входа', 'You will use it to login'];
+var createAccount = ['Теперь создай свой аккаунт', 'Now create your account'];
+var signInAccount = ['Теперь войди в свой аккаунт', 'Now sign in your account'];
+var aboutAccount = ['Он нужен для входа с разных устройств', 'It is used to login from different devices'];
+var signInButton = ['Войти', 'Sign in'];
+var registerButton = ['Регистрация', 'Register'];
+var verifyEmail = ['На указанную почту отправлено письмо с подтверждением. После подтверждения попробуй войти', 'A confirmation email was sent to the specified adress. After confirmation try to sign in'];
+var couldNotSignIn = ['Невозможно войти', 'Could not sign in'];
 
 //set email
 var wantToRegister = ['Хочешь синхронизировать свою базу с облаком?', 'Do you want to sync your database with the cloud?'];
@@ -42,6 +48,7 @@ var less = ['Пароль должен быть больше 8 символов'
 var notEqual = ['Пароли не совпадают', 'Passwords do not match'];
 var enterMasterPass = ['Введи мастер-пароль', 'Enter masterpass'];
 var incorrectPass = ['Неверный пароль', 'Incorrect password'];
+var noSuchUser = ['Такой пользователь не зарегистрирован', 'This user is not registered'];
 
 //home page
 var manager = ['Менеджер паролей', 'Password manager'];
@@ -73,31 +80,25 @@ var emptyUrlException = ['Ссылка пуста', 'Empty url'];
 var settingsTitle = ['НАСТРОЙКИ', 'SETTINGS'];
 var appearance = ['Оформление', 'Appearance'];
 var language = ['Язык', 'Language'];
-var masterPassSettings = ['Мастер-пароль', 'Masterpass'];
+var accountSettings = ['Аккаунт', 'Account'];
 var other = ['Прочее', 'Other'];
 var themeButton = ['Тема', 'Theme'];
 var setDarkTheme = ['Тёмная тема', 'Dark theme'];
 var setLightTheme = ['Светлая тема', 'Light theme'];
+var changeEmailButton = ['Сменить почту', 'Change email'];
 var changeMasterPassButton = ['Сменить мастер-пароль', 'Change masterpass'];
+var newEmail = ['Новая почта', 'New email'];
 var cloud = ['Облако', 'Cloud'];
-var signInButton = ['Войти', 'Sign in'];
-var registerButton = ['Зарегистрироваться', 'Register'];
-var signOutButton = ['Выйти', 'Sign out'];
 var backupButton = ['Загрузить на сервер', 'Backup'];
 var syncButton = ['Синхронизировать', 'Sync'];
-var resetPasswordButton = ['Сбросить пароль', 'Reset password'];
 var donate = ['Поддержать', 'Donate'];
 var about = ['О разработчике', 'About'];
-
-//cloud storage
-var verifyEmail = ['На указанную почту отправлено письмо с подтверждением. После подтверждения попробуй войти', 'A confirmation email was sent to the specified adress. After confirmation try to sign in'];
-var couldNotSignIn = ['Невозможно войти', 'Could not sign in'];
-var cloudPassword = ['Облачный пароль', 'Cloud password'];
-var createCloudPassword = ['Придумай облачный пароль', 'Create cloud password'];
-var enterCloudPassword = ['Введи облачный пароль', 'Enter cloud password'];
 
 //generator
 var useLetters = ['Использовать буквы', 'Use letters'];
 var useNumbers = ['Использовать цифры', 'Use numbers'];
 var useSymbols = ['Использовать символы', 'Use symbols'];
 var symbolsCount = ['Количество символов', 'Number of characters'];
+
+//dynamic texts
+var createAccountPageText = '';

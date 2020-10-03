@@ -2,9 +2,13 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:circular_reveal_animation/circular_reveal_animation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:safety/Cloud/auth.dart';
+import 'package:safety/Cloud/cloud.dart';
 import 'package:safety/Database/DBHelper.dart';
 import 'package:safety/Database/password.dart';
 
@@ -92,10 +96,16 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   var db = DBHelper();
 
-  final Settings _settings = Settings();
+  final AuthService _auth = AuthService();
+  final DatabaseService _database = DatabaseService();
+
+  FToast fToast;
 
   void initState() {
     super.initState();
+
+    fToast = FToast();
+    fToast.init(context);
 
     getLangState().then((value) {
       setState(() {
@@ -549,6 +559,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
               encryptedCell[2], encryptedCell[3], now.toString());
           await db.savePass(password);
           print('saved');
+          print(now.toString());
 
           close(false, false);
         });

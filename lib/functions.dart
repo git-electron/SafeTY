@@ -10,7 +10,7 @@ Future<bool> saveLangState(int lang) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   prefs.setInt('language', lang);
 
-  print('[v] Language state saved successfully. (id: ${lang})');
+  print('[SHARED PREFERENCES] Language state saved successfully. (id: $lang)');
 
   return prefs.commit();
 }
@@ -27,7 +27,7 @@ Future<bool> saveThemeState(int theme) async {
   prefs.setInt('theme', theme);
 
   print(
-      '[v] Theme state saved successfully. (id: $theme, name: ${names[theme]})');
+      '[SHARED PREFERENCES] Theme state saved successfully. (id: $theme, name: ${names[theme]})');
 
   loadTheme();
 
@@ -46,7 +46,7 @@ Future<bool> saveDarkThemeState(int darkThemeState) async {
   prefs.setInt('dark theme', darkThemeState);
 
   print(
-      '[v] Dark theme state saved successfully. (state: $darkThemeState)');
+      '[SHARED PREFERENCES] Dark theme state saved successfully. (state: $darkThemeState)');
 
   return prefs.commit();
 }
@@ -62,7 +62,7 @@ Future<bool> saveEncryptedPass(String pass) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   prefs.setString('pass', pass);
 
-  print('[v] Encrypted pass saved successfully. (value: $pass)');
+  print('[SHARED PREFERENCES] Encrypted pass saved successfully. (value: $pass)');
 
   return prefs.commit();
 }
@@ -78,7 +78,7 @@ Future<bool> saveLoginState(bool logged) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   prefs.setBool('login state', logged);
 
-  print('[v] Login state saved successfully. (value: $logged)');
+  print('[SHARED PREFERENCES] Login state saved successfully. (value: $logged)');
 
   return prefs.commit();
 }
@@ -90,18 +90,18 @@ Future<bool> getLoginState() async {
   return logged;
 }
 
-Future<bool> saveEmail(String mail) async {
+Future<bool> saveEmail(List<String> mails) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  prefs.setString('email', mail);
+  prefs.setStringList('emails', mails);
 
-  print('[v] Mail saved successfully. (value: $mail)');
+  print('[SHARED PREFERENCES] Mail saved successfully. (value: $mails)');
 
   return prefs.commit();
 }
 
-Future<String> getEmail() async {
+Future<List<String>> getEmail() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  String mail = prefs.getString('email');
+  List<String> mail = prefs.getStringList('emails');
 
   return mail;
 }
@@ -112,7 +112,7 @@ void loadTheme() {
   getThemeState().then((value) {
     if (value != null) {
       theme = value;
-      print('Current theme state: $theme');
+      print('[SHARED PREFERENCES] Current theme state: $theme');
     }
   });
 }
@@ -122,19 +122,13 @@ void screenUtil(context, double height, double width) {
       height: height, width: width, allowFontScaling: false);
 }
 
-void encryptPass(String pass) async {
+void generateKeyFromPassword(String pass) async {
   final cryptor = new PlatformStringCryptor();
   final String key = await cryptor.generateKeyFromPassword(pass, 'salt');
 
   decryptKey = key;
-  print('\n\nKey to encrypt/decrypt passwords: $key');
-  print('Old key for passwords: $oldDecryptKey\n\n');
-
-  final String encrypted = await cryptor.encrypt(pass, key);
-
-  print(encrypted);
-
-  saveEncryptedPass(encrypted);
+  print('\n\n[SHARED PREFERENCES] Key to encrypt/decrypt passwords: $key');
+  print('[SHARED PREFERENCES] Old key for passwords: $oldDecryptKey\n\n');
 
   transition = true;
 }
@@ -152,7 +146,7 @@ Future<bool> decryptPass(String pass) async {
   final String key = await cryptor.generateKeyFromPassword(pass, 'salt');
 
   decryptKey = key;
-  print('Key to encrypt/decrypt passwords: $key');
+  print('[SHARED PREFERENCES] Key to encrypt/decrypt passwords: $key');
 
   try {
     final String decrypted = await cryptor.decrypt(encrypted, key);
@@ -175,7 +169,7 @@ Future<List<String>> encryptCell(List cellToEncrypt) async {
   String link = cellToEncrypt[3];
 
   String key = decryptKey;
-  print('Key to encrypt/decrypt passwords: $key');
+  print('[SHARED PREFERENCES] Key to encrypt/decrypt passwords: $key');
 
   final cryptor = new PlatformStringCryptor();
 
@@ -190,7 +184,7 @@ Future<List<String>> encryptCell(List cellToEncrypt) async {
     encryptedLink
   ];
 
-  print('encrypted cell with key $key');
+  print('[SHARED PREFERENCES] encrypted cell with key $key');
 
   return encryptedCell;
 }
@@ -203,7 +197,7 @@ Future<List<String>> decryptCell(List cellToDecrypt, bool decryptWithOldKey) asy
 
   String key = decryptWithOldKey ? oldDecryptKey : decryptKey;
 
-  print('Key to encrypt/decrypt passwords: $key');
+  print('[SHARED PREFERENCES] Key to encrypt/decrypt passwords: $key');
 
   final cryptor = new PlatformStringCryptor();
 

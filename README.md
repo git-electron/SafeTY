@@ -32,6 +32,5 @@ How serious are you about security? If you use similar password for all of your 
 # Links
 
 Download SafeTY:
-* from Google Play (soon)
+* [from Google Play](https://play.google.com/store/apps/details?id=electron.safety)
 * from F-Droid (soon)
-"# SafeTY" 

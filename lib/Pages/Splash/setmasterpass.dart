@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:safety/Cloud/auth.dart';
 
 import 'package:safety/Settings/texts.dart';
 import 'package:safety/Settings/themes.dart';
@@ -9,12 +11,12 @@ import 'package:safety/Utils/fieldFocusChange.dart';
 import 'package:safety/functions.dart';
 import 'package:safety/custom_icons_icons.dart';
 
-class SetMasterPass extends StatefulWidget {
+class CreateAccount extends StatefulWidget {
   @override
-  _SetMasterPassState createState() => _SetMasterPassState();
+  CreateAccountState createState() => CreateAccountState();
 }
 
-class _SetMasterPassState extends State<SetMasterPass> {
+class CreateAccountState extends State<CreateAccount> {
   bool first = true;
   bool second = false;
   bool third = false;
@@ -24,6 +26,8 @@ class _SetMasterPassState extends State<SetMasterPass> {
   bool obs1 = true;
   bool obs2 = true;
 
+  bool reg = true;
+
   int lang = 1;
 
   double width1;
@@ -32,14 +36,16 @@ class _SetMasterPassState extends State<SetMasterPass> {
 
   String text = '';
 
-  final _controller1 = TextEditingController();
-  final _controller2 = TextEditingController();
+  final _emailController = TextEditingController();
+  final _masterPassController = TextEditingController();
 
   final FocusNode _firstFocus = FocusNode();
   final FocusNode _secondFocus = FocusNode();
 
   Color color1 = Colors.white;
   Color color2 = Colors.white;
+
+  final AuthService _auth = AuthService();
 
   void initState() {
     super.initState();
@@ -79,36 +85,21 @@ class _SetMasterPassState extends State<SetMasterPass> {
           startSetting = false;
         });
 
-        setMasterPass();
+        signInUp();
       }
     });
   }
 
-  void setMasterPass() {
-    if (_controller1.text != '') {
-      if (_controller1.text == _controller2.text) {
-        if (_controller1.text.length >= 8) {
-          setState(() {
-            text = '';
-          });
+  void setEmail() {
+    if (_emailController.text != '') {
+      setState(() {
+        text = '';
+      });
 
-          encryptPass(_controller1.text);
-        } else {
-          setState(() {
-            text = less[lang];
-            color1 = Colors.red;
-          });
-        }
-      } else {
-        setState(() {
-          text = notEqual[lang];
-          color1 = Colors.red;
-          color2 = Colors.red;
-        });
-      }
+      setMasterPass();
     } else {
       setState(() {
-        text = enterMasterPass[lang];
+        text = enterEmail[lang];
         color1 = Colors.red;
       });
     }
@@ -116,8 +107,118 @@ class _SetMasterPassState extends State<SetMasterPass> {
     print(text);
   }
 
+  void setMasterPass() {
+    if (_masterPassController.text != '') {
+      if (_masterPassController.text.length >= 8) {
+        setState(() {
+          text = '';
+        });
+
+        signUp();
+      } else {
+        setState(() {
+          text = less[lang];
+          color2 = Colors.red;
+        });
+      }
+    } else {
+      setState(() {
+        text = enterMasterPass[lang];
+        color2 = Colors.red;
+      });
+    }
+
+    print(text);
+  }
+
+  void signInUp() async {
+    print('[AUTH] signing in / registering');
+    if (reg) {
+      setEmail();
+    } else {
+      signIn();
+    }
+  }
+
+  void signIn() async {
+    if (_emailController.text != '') {
+      if (_masterPassController.text != '') {
+        print('signing in');
+
+        String result = await _auth.signIn(
+            _emailController.text, _masterPassController.text);
+
+        try {
+          result = result.split(']')[1].substring(1);
+          print('[AUTH] result is: ' + result);
+
+          setState(() {
+            text = result;
+          });
+        } catch (e) {
+          if (result == '!emailVerified') {
+            print(e.toString());
+            print('[AUTH] result is: ' + result);
+
+            setState(() {
+              text = verifyEmail[lang];
+            });
+          } else {
+            print(e.toString());
+            print('[AUTH] result is: ' + result);
+
+            User user = await _auth.getUser();
+
+            saveLoginState(true);
+            saveEmail([user.email]);
+
+            generateKeyFromPassword(_masterPassController.text);
+
+            print(
+                '\n\n[AUTH] Logged in:\nEmail: ${user.email}\nPassword: secured\n\n');
+          }
+        }
+      } else {
+        setState(() {
+          text = enterPass[lang];
+          color2 = Colors.red;
+        });
+      }
+    } else {
+      setState(() {
+        text = enterEmail[lang];
+        color1 = Colors.red;
+      });
+    }
+  }
+
+  void signUp() async {
+    print('[AUTH] registering');
+
+    String result =
+        await _auth.signUp(_emailController.text, _masterPassController.text);
+
+    try {
+      result = result.split(']')[1].substring(1);
+      print('[AUTH] result is: ' + result);
+
+      setState(() {
+        text = result;
+      });
+    } catch (e) {
+      print(e.toString());
+      print('[AUTH] result is: ' + result);
+
+      setState(() {
+        text = verifyEmail[lang];
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    Size size1 = MediaQuery.of(context).size;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
@@ -136,15 +237,16 @@ class _SetMasterPassState extends State<SetMasterPass> {
           ),
         ),
         AnimatedContainer(
-          alignment: Alignment.bottomCenter,
+          alignment: reg ? Alignment.bottomCenter : Alignment.center,
+          padding: EdgeInsets.only(bottom: size.height * 0.02),
           duration: Duration(milliseconds: 500),
           curve: Curves.easeInOut,
-          height: second ? size.height * 0.15 : 0,
+          height: second ? (reg ? size.height * 0.15 : size.height * 0.3) : 0,
           child: AnimatedOpacity(
             opacity: first ? 0 : 1,
             duration: Duration(milliseconds: 300),
             child: Text(
-              first ? '' : setPass[lang],
+              first ? '' : (reg ? createAccount[lang] : signInAccount[lang]),
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
@@ -158,12 +260,12 @@ class _SetMasterPassState extends State<SetMasterPass> {
           alignment: Alignment.center,
           duration: Duration(milliseconds: 500),
           curve: Curves.easeInOut,
-          height: third ? size.height * 0.15 : 0,
+          height: third ? (reg ? size.height * 0.15 : 0) : 0,
           child: AnimatedOpacity(
-            opacity: third ? 1 : 0,
+            opacity: third ? (reg ? 1 : 0) : 0,
             duration: Duration(milliseconds: 300),
             child: Text(
-              first ? '' : aboutPass[lang],
+              first ? '' : aboutAccount[lang],
               style: Theme.of(context)
                   .primaryTextTheme
                   .headline1
@@ -194,12 +296,11 @@ class _SetMasterPassState extends State<SetMasterPass> {
                   borderRadius: BorderRadius.circular(size.height * 0.1 / 2),
                   border: Border.all(color: color1, width: 3)),
               child: TextField(
-                controller: _controller1,
+                controller: _emailController,
                 autocorrect: false,
-                keyboardType: TextInputType.visiblePassword,
+                keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 focusNode: _firstFocus,
-                obscureText: obs1,
                 enabled: true,
                 style: Theme.of(context)
                     .primaryTextTheme
@@ -232,19 +333,8 @@ class _SetMasterPassState extends State<SetMasterPass> {
                 },
                 cursorColor: Colors.white,
                 decoration: InputDecoration(
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      obs1 ? CustomIcons.eye_off : CustomIcons.eye,
-                      color: Colors.white,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        obs1 = !obs1;
-                      });
-                    },
-                  ),
                   border: InputBorder.none,
-                  hintText: masterPassField[lang],
+                  hintText: emailField[lang],
                   hintStyle: Theme.of(context)
                       .primaryTextTheme
                       .headline2
@@ -277,7 +367,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
                   borderRadius: BorderRadius.circular(size.height * 0.1 / 2),
                   border: Border.all(color: color2, width: 3)),
               child: TextField(
-                controller: _controller2,
+                controller: _masterPassController,
                 autocorrect: false,
                 keyboardType: TextInputType.visiblePassword,
                 textInputAction: TextInputAction.done,
@@ -324,7 +414,7 @@ class _SetMasterPassState extends State<SetMasterPass> {
                     },
                   ),
                   border: InputBorder.none,
-                  hintText: repeatField[lang],
+                  hintText: masterPassField[lang],
                   hintStyle: Theme.of(context)
                       .primaryTextTheme
                       .headline2
@@ -336,10 +426,39 @@ class _SetMasterPassState extends State<SetMasterPass> {
             ),
           ),
         ),
+        AnimatedOpacity(
+          opacity: field ? 1 : 0,
+          duration: Duration(milliseconds: 500),
+          child: Container(
+            padding: EdgeInsets.only(
+                left: size.width * 0.15, right: size.width * 0.15),
+            height: size.height * 0.03,
+            width: size1.width,
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  reg = !reg;
+                });
+              },
+              child: Container(
+                child: Text(
+                  reg ? signInButton[lang] : registerButton[lang],
+                  style: Theme.of(context)
+                      .primaryTextTheme
+                      .headline2
+                      .copyWith(
+                          fontSize: size.width * 0.04,
+                          color: Colors.white.withOpacity(0.8)),
+                ),
+              ),
+            ),
+          ),
+        ),
         AnimatedContainer(
           duration: Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          width: size.width,
+          width: size1.width * 0.95,
           height: (text == '') ? size.height * 0.058 : size.height * 0.108,
           alignment: Alignment.center,
           child: AnimatedOpacity(

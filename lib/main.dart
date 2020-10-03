@@ -65,6 +65,8 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
   double left = 0;
   double right = 0;
 
+  int lang = 1;
+
   Color color1 = bottomLeftColor[theme];
   Color color2 = topRightColor[theme];
 
@@ -88,7 +90,7 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
 
     initPlatformState();
 
-    getEncryptedPass().then((value) {
+    getEmail().then((value) {
       print(value);
 
       if (value != null) {
@@ -234,6 +236,7 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
       });
 
       if (transition) {
+        print('start transition');
         setState(() {
           appear = true;
           transition = false;
@@ -361,7 +364,7 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
                           ),
                           ListView(
                             children: <Widget>[
-                              SetMasterPass(),
+                              CreateAccount(),
                             ],
                           ),
                         ],

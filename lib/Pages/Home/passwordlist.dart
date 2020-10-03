@@ -1,8 +1,12 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:safety/Cloud/auth.dart';
+import 'package:safety/Cloud/cloud.dart';
 
 import 'package:safety/Database/DBHelper.dart';
 import 'package:safety/Database/password.dart';
@@ -27,8 +31,13 @@ class _PasswordListState extends State<PasswordList> {
 
   var db = DBHelper();
 
+  final AuthService _auth = AuthService();
+  final DatabaseService _database = DatabaseService();
+
   void initState() {
     super.initState();
+
+    sync();
 
     getLangState().then((value) {
       setState(() {
@@ -45,6 +54,94 @@ class _PasswordListState extends State<PasswordList> {
         search = true;
       });
     }
+
+    Timer.periodic(Duration(seconds: 60), (timer) {
+      try{
+        sync();
+      } catch(e){
+        print(e.toString());
+      }
+
+      if(page != 1){
+        timer.cancel();
+      }
+    });
+  }
+
+  void sync() async {
+    print('\n\nSyncing...\n\n');
+
+    int deviceIndex = 0;
+
+    User user = await _auth.getUser();
+
+    DocumentSnapshot doc = await _database.getUserData(user.uid);
+    List<dynamic> devices = doc.get('devices');
+    List passwordsFromDB = [];
+
+    db.getPass().then((value) {
+      setState(() {
+        passwordsFromDB = value;
+      });
+
+      while (deviceIndex < devices.length) {
+        int passwordIndex = 0;
+
+        List<dynamic> passwords = doc.get('${devices[deviceIndex]}');
+
+        while (passwordIndex < passwords.length) {
+          bool similar = false;
+
+          Map<String, dynamic> passFromCloud = {
+            'title': passwords[passwordIndex]['title'],
+            'pass': passwords[passwordIndex]['pass'],
+            'name': passwords[passwordIndex]['name'],
+            'link': passwords[passwordIndex]['link'],
+            'sortDate': passwords[passwordIndex]['sortDate'],
+          };
+
+          print('> Cloud response:\n' + passFromCloud.toString() + '\n\n');
+
+          int index = 0;
+
+          while (index < passwordsFromDB.length) {
+            Password password = passwordsFromDB[index];
+
+            if (passwords[passwordIndex]['sortDate'] == password.sortDate) {
+              print('\n\nPasswords are similar:\n${passwords[passwordIndex]['sortDate']}\n${password.sortDate}\n\n');
+              setState(() {
+                similar = true;
+              });
+            } else {
+              print('\n\nPasswords are NOT similar:\n${passwords[passwordIndex]['sortDate']}\n${password.sortDate}\n\n');
+            }
+
+            index++;
+          }
+
+          if (!similar) {
+            print(
+                '\n\nResult for ${passwords[passwordIndex]['title']}: will be pushed into db');
+
+            Password password = Password(
+                passwords[passwordIndex]['title'],
+                passwords[passwordIndex]['pass'],
+                passwords[passwordIndex]['name'],
+                passwords[passwordIndex]['link'],
+                passwords[passwordIndex]['sortDate']);
+            db.savePass(password);
+            print('[v] saved\n\n');
+          } else {
+            print(
+                '\n\nResult for ${passwords[passwordIndex]['title']}: will NOT be pushed into db\n\n');
+          }
+
+          passwordIndex++;
+        }
+
+        deviceIndex++;
+      }
+    });
   }
 
   @override

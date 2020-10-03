@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:device_info/device_info.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
@@ -41,19 +42,17 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   bool pressed10 = false;
   bool themeSelect = false;
   bool languageSelect = false;
+  bool changeMail = false;
   bool changePass = false;
   bool donateWindow = false;
   bool aboutWindow = false;
-  bool signInField = false;
-  bool resetField = false;
 
   bool selection = false;
   bool langSelection = false;
+  bool mailChanging = false;
   bool passChanging = false;
   bool donating = false;
   bool aboutInfo = false;
-  bool signingIn = false;
-  bool resetting = false;
 
   bool rus = false;
   bool buttons = false;
@@ -69,6 +68,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   bool finished = false;
 
   bool passChanged = false;
+  bool mailChanged = false;
 
   bool loggedIn = false;
   bool anim = false;
@@ -199,7 +199,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   }
 
   void changeMasterPass() {
-    checkMasterPass();
+    checkMasterPass(_oldMasterPassController.text);
 
     Timer.periodic(Duration(milliseconds: 50), (timer) {
       if (finished) {
@@ -213,7 +213,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
           if (text == '') {
             setMasterPass().then((correct) {
               if (text == '') {
-                reEncryptDB();
+                reEncryptCloud();
               }
             });
           } else {
@@ -226,21 +226,93 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
     });
   }
 
-  void checkMasterPass() {
-    if (_oldMasterPassController.text != '') {
-      decryptPass(_oldMasterPassController.text).then((value) {
-        if (value) {
-          print('Success');
+  void changeEmail() async {
+    checkMasterPass(_masterPassController.text);
+
+    Timer.periodic(Duration(milliseconds: 50), (timer) {
+      if (finished) {
+        timer.cancel();
+        Future.delayed(Duration(milliseconds: 100), () async {
           setState(() {
-            text = '';
-            finished = true;
+            finished = false;
           });
-        } else {
-          setState(() {
-            text = incorrectPass[lang];
-            color1 = Colors.red;
-            finished = true;
-          });
+
+          print('text = $text');
+
+          if (text == '') {
+            User user = await _auth.getUser();
+            try {
+              user.updateEmail(_emailController.text);
+              getEmail().then((emails) {
+                emails.add(_emailController.text);
+                saveEmail(emails);
+              });
+            } catch (e) {
+              setState(() {
+                print(e.toString());
+                text = e.toString();
+              });
+            }
+
+            rotateController.forward();
+            setState(() {
+              mailChanged = true;
+            });
+            FocusScope.of(context).unfocus();
+            Future.delayed(Duration(milliseconds: 1000), () {
+              setState(() {
+                mailChanging = false;
+                changeMail = false;
+              });
+            });
+
+            Future.delayed(Duration(milliseconds: 2000), () {
+              rotateController.reverse();
+              setState(() {
+                mailChanged = false;
+
+                _masterPassController.text = '';
+                _emailController.text = '';
+              });
+            });
+          } else {
+            print('false');
+          }
+        });
+      }
+    });
+  }
+
+  void checkMasterPass(String masterPass) async {
+    if (masterPass != '') {
+      getEmail().then((emails) async {
+        int i = 0;
+
+        while (i < emails.length) {
+          String result = await _auth.signIn(emails[i], masterPass);
+
+          print(result);
+
+          try {
+            result = result.split(']')[1].substring(1);
+            print('[AUTH] result is: ' + result);
+
+            if (result.toLowerCase().contains('the password is invalid')) {
+              setState(() {
+                text = incorrectPass[lang];
+                color1 = Colors.red;
+                finished = true;
+              });
+            } else {}
+          } catch (e) {
+            print('Success');
+            setState(() {
+              text = '';
+              finished = true;
+            });
+          }
+
+          i++;
         }
       });
     } else {
@@ -252,28 +324,6 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
     }
 
     print(text);
-  }
-
-  void checkPasswordWhenSignUp() {
-    if (_masterPassController.text != '') {
-      if (_masterPassController.text.length >= 8) {
-        setState(() {
-          text = '';
-        });
-      } else {
-        setState(() {
-          text = less[lang];
-          color2 = Colors.red;
-        });
-      }
-    } else {
-      setState(() {
-        text = reg ? createCloudPassword[lang] : enterCloudPassword[lang];
-        color2 = Colors.red;
-      });
-    }
-
-    print('text = "' + text + '"');
   }
 
   Future<bool> setMasterPass() async {
@@ -290,7 +340,17 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
             oldDecryptKey = decryptKey;
           });
 
-          encryptPass(_newMasterPassController.text);
+          generateKeyFromPassword(_newMasterPassController.text);
+
+          User user = await _auth.getUser();
+          try {
+            user.updatePassword(_newMasterPassController.text);
+          } catch (e) {
+            setState(() {
+              print(e.toString());
+              text = e.toString();
+            });
+          }
         } else {
           setState(() {
             text = less[lang];
@@ -344,11 +404,10 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
           print('link: ${value[3]}\n\n');
 
           encryptCell(value).then((encryptedCell) async {
-            var now = DateTime.now();
             var db = DBHelper();
 
             var newPassword = Password(encryptedCell[0], encryptedCell[1],
-                encryptedCell[2], encryptedCell[3], now.toString());
+                encryptedCell[2], encryptedCell[3], password.sortDate);
             newPassword.setPassId(password.id);
 
             print('\n\ntitle: ${password.title}');
@@ -368,18 +427,11 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
       setState(() {
         passChanged = true;
       });
-
+      FocusScope.of(context).unfocus();
       Future.delayed(Duration(milliseconds: 1000), () {
         setState(() {
-          pressed4 = true;
           passChanging = false;
           changePass = false;
-        });
-      });
-
-      Future.delayed(Duration(milliseconds: 1300), () {
-        setState(() {
-          pressed4 = false;
         });
       });
 
@@ -394,6 +446,98 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
         });
       });
     });
+  }
+
+  void reEncryptCloud() async {
+    int deviceIndex = 0;
+
+    User user = await _auth.getUser();
+
+    DocumentSnapshot doc = await _database.getUserData(user.uid);
+    List<dynamic> userDevices = doc.get('devices');
+
+    while (deviceIndex < userDevices.length) {
+      int passwordIndex = 0;
+
+      List<dynamic> passwords = doc.get('${userDevices[deviceIndex]}');
+      List<Map<String, dynamic>> newPasswords = [];
+
+      while (passwordIndex < passwords.length) {
+        Map<String, dynamic> passFromCloud = {
+          'title': passwords[passwordIndex]['title'],
+          'pass': passwords[passwordIndex]['pass'],
+          'name': passwords[passwordIndex]['name'],
+          'link': passwords[passwordIndex]['link'],
+          'sortDate': passwords[passwordIndex]['sortDate'],
+        };
+
+        print('> Cloud response:\n' + passFromCloud.toString() + '\n\n');
+
+        List<String> cell = [
+          passFromCloud['title'],
+          passFromCloud['pass'],
+          passFromCloud['name'],
+          passFromCloud['link']
+        ];
+
+        decryptCell(cell, true).then((value) {
+          print('\n\ntitle: ${value[0]}');
+          print('pass: ${value[1]}');
+          print('username: ${value[2]}');
+          print('link: ${value[3]}\n\n');
+
+          encryptCell(value).then((encryptedCell) async {
+            Map<String, dynamic> cell = {
+              'title': encryptedCell[0],
+              'pass': encryptedCell[1],
+              'name': encryptedCell[2],
+              'link': encryptedCell[3],
+              'sortDate': passFromCloud['sortDate'],
+            };
+
+            newPasswords.add(cell);
+          });
+        });
+
+        passwordIndex++;
+      }
+
+      DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+      AndroidDeviceInfo device = await _deviceInfo.androidInfo;
+
+      List<dynamic> devices = [];
+
+      try {
+        DocumentSnapshot doc = await _database.getUserData(user.uid);
+        devices = doc.get('devices');
+      } catch (e) {
+        print(e.toString());
+      }
+
+      int i = 0;
+      bool exists = false;
+      while (i < devices.length) {
+        if(devices[i] == device.androidId){
+          setState(() {
+            exists = true;
+          });
+        }
+
+        i++;
+      }
+
+      if(!exists){
+        devices.add(device.androidId);
+      }
+
+      print(newPasswords);
+      _database.updateUserData(
+          newPasswords, devices, user.uid, device.androidId);
+
+      deviceIndex++;
+    }
+
+    reEncryptDB();
   }
 
   void backup() async {
@@ -414,25 +558,55 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
           'sortDate': password.sortDate,
         };
 
+        print(cell['sortDate']);
+
         passwords.add(cell);
 
         i++;
       }
 
+      DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+      AndroidDeviceInfo device = await _deviceInfo.androidInfo;
+
+      List<dynamic> devices = [];
+
+      try {
+        DocumentSnapshot doc = await _database.getUserData(user.uid);
+        devices = doc.get('devices');
+      } catch (e) {
+        print(e.toString());
+      }
+
+      int index = 0;
+      bool exists = false;
+      while (index < devices.length) {
+        if(devices[index] == device.androidId){
+          setState(() {
+            exists = true;
+          });
+        }
+
+        index++;
+      }
+
+      if(!exists){
+        devices.add(device.androidId);
+      }
+
       print(passwords);
-      _database.updateUserData(passwords, user.uid);
+      _database.updateUserData(passwords, devices, user.uid, device.androidId);
     });
   }
 
   void sync() async {
     print('\n\nSyncing...\n\n');
 
-    int i = 0;
+    int deviceIndex = 0;
 
     User user = await _auth.getUser();
 
     DocumentSnapshot doc = await _database.getUserData(user.uid);
-    List<dynamic> passwords = doc.get('passwords');
+    List<dynamic> devices = doc.get('devices');
     List passwordsFromDB = [];
 
     db.getPass().then((value) {
@@ -440,52 +614,60 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
         passwordsFromDB = value;
       });
 
-      while (i < passwords.length) {
-        bool similar = false;
+      while (deviceIndex < devices.length) {
+        int passwordIndex = 0;
 
-        Map<String, dynamic> passFromCloud = {
-          'title': passwords[i]['title'],
-          'pass': passwords[i]['pass'],
-          'name': passwords[i]['name'],
-          'link': passwords[i]['link'],
-          'sortDate': passwords[i]['sortDate'],
-        };
+        List<dynamic> passwords = doc.get('${devices[deviceIndex]}');
 
-        print('> Cloud response:\n' + passFromCloud.toString() + '\n\n');
+        while (passwordIndex < passwords.length) {
+          bool similar = false;
 
-        int index = 0;
+          Map<String, dynamic> passFromCloud = {
+            'title': passwords[passwordIndex]['title'],
+            'pass': passwords[passwordIndex]['pass'],
+            'name': passwords[passwordIndex]['name'],
+            'link': passwords[passwordIndex]['link'],
+            'sortDate': passwords[passwordIndex]['sortDate'],
+          };
 
-        while (index < passwordsFromDB.length) {
-          Password password = passwordsFromDB[index];
+          print('> Cloud response:\n' + passFromCloud.toString() + '\n\n');
 
-          if (passwords[i]['sortDate'] == password.sortDate) {
-            print('Passwords are similar');
-            setState(() {
-              similar = true;
-            });
+          int index = 0;
+
+          while (index < passwordsFromDB.length) {
+            Password password = passwordsFromDB[index];
+
+            if (passwords[passwordIndex]['sortDate'] == password.sortDate) {
+              print('Passwords are similar');
+              setState(() {
+                similar = true;
+              });
+            }
+
+            index++;
           }
 
-          index++;
+          if (!similar) {
+            print(
+                '\n\nResult for ${passwords[passwordIndex]['title']}: will be pushed into db');
+
+            Password password = Password(
+                passwords[passwordIndex]['title'],
+                passwords[passwordIndex]['pass'],
+                passwords[passwordIndex]['name'],
+                passwords[passwordIndex]['link'],
+                passwords[passwordIndex]['sortDate']);
+            db.savePass(password);
+            print('[v] saved\n\n');
+          } else {
+            print(
+                '\n\nResult for ${passwords[passwordIndex]['title']}: will NOT be pushed into db\n\n');
+          }
+
+          passwordIndex++;
         }
 
-        if (!similar) {
-          print(
-              '\n\nResult for ${passwords[i]['title']}: will be pushed into db');
-
-          Password password = Password(
-              passwords[i]['title'],
-              passwords[i]['pass'],
-              passwords[i]['name'],
-              passwords[i]['link'],
-              passwords[i]['sortDate']);
-          db.savePass(password);
-          print('[v] saved\n\n');
-        } else {
-          print(
-              '\n\nResult for ${passwords[i]['title']}: will NOT be pushed into db\n\n');
-        }
-
-        i++;
+        deviceIndex++;
       }
     });
   }
@@ -1459,7 +1641,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                   height: size.height * 0.05,
                 ),
                 Text(
-                  masterPassSettings[lang],
+                  accountSettings[lang],
                   style: Theme.of(context).primaryTextTheme.headline1.copyWith(
                       fontSize: ScreenUtil().setSp(size.width * 0.08),
                       color: color2Animation.value),
@@ -1467,7 +1649,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                 AnimatedContainer(
                   duration: Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
-                  height: changePass ? size.height * 0.82 : size.height * 0.12,
+                  height: changeMail ? size.height * 0.72 : size.height * 0.12,
                   width: size1.width,
                   alignment: Alignment.center,
                   child: GestureDetector(
@@ -1475,20 +1657,17 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       setState(() {
                         pressed4 = true;
 
-                        changePass = !changePass;
+                        changeMail = !changeMail;
 
-                        signInField = false;
-                        resetField = false;
-
-                        signingIn = false;
-                        resetting = false;
+                        changePass = false;
+                        passChanging = false;
 
                         active1 = false;
                         width1 = size.width * 0.75;
                         color1 = Colors.white;
                         active2 = false;
                         width2 = size.width * 0.75;
-                        color3 = Colors.white;
+                        color2 = Colors.white;
                         active3 = false;
                         width3 = size.width * 0.75;
                         color3 = Colors.white;
@@ -1496,16 +1675,16 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                         text = '';
                       });
 
-                      if (passChanging) {
+                      if (mailChanging) {
                         setState(() {
-                          passChanging = false;
+                          mailChanging = false;
 
                           active1 = false;
                           width1 = size.width * 0.75;
                           color1 = Colors.white;
                           active2 = false;
                           width2 = size.width * 0.75;
-                          color3 = Colors.white;
+                          color2 = Colors.white;
                           active3 = false;
                           width3 = size.width * 0.75;
                           color3 = Colors.white;
@@ -1515,7 +1694,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       } else {
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
-                            passChanging = true;
+                            mailChanging = true;
                           });
                         });
                       }
@@ -1527,9 +1706,11 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       });
                     },
                     onTapDown: (details) {
-                      setState(() {
-                        pressed4 = true;
-                      });
+                      if (!mailChanging) {
+                        setState(() {
+                          pressed4 = true;
+                        });
+                      }
                     },
                     onLongPress: () {
                       setState(() {
@@ -1540,19 +1721,34 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       setState(() {
                         pressed4 = true;
 
-                        changePass = !changePass;
+                        changeMail = !changeMail;
+
+                        changePass = false;
+                        passChanging = false;
+
+                        active1 = false;
+                        width1 = size.width * 0.75;
+                        color1 = Colors.white;
+                        active2 = false;
+                        width2 = size.width * 0.75;
+                        color2 = Colors.white;
+                        active3 = false;
+                        width3 = size.width * 0.75;
+                        color3 = Colors.white;
+
+                        text = '';
                       });
 
-                      if (passChanging) {
+                      if (mailChanging) {
                         setState(() {
-                          passChanging = false;
+                          mailChanging = false;
 
                           active1 = false;
                           width1 = size.width * 0.75;
                           color1 = Colors.white;
                           active2 = false;
                           width2 = size.width * 0.75;
-                          color3 = Colors.white;
+                          color2 = Colors.white;
                           active3 = false;
                           width3 = size.width * 0.75;
                           color3 = Colors.white;
@@ -1562,7 +1758,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       } else {
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
-                            passChanging = true;
+                            mailChanging = true;
                           });
                         });
                       }
@@ -1576,8 +1772,8 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                     child: AnimatedContainer(
                       duration: Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
-                      height: changePass
-                          ? size.height * 0.8
+                      height: changeMail
+                          ? size.height * 0.7
                           : (pressed4
                               ? size.height * 0.1 - size.width * 0.02
                               : size.height * 0.1),
@@ -1607,6 +1803,501 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                               curve: Curves.easeInOut,
                               alignment: Alignment.centerLeft,
                               height: pressed4
+                                  ? size.height * 0.1 - size.width * 0.02
+                                  : size.height * 0.1,
+                              width: size1.width * 0.92,
+                              child: Text(
+                                changeEmailButton[lang],
+                                style: Theme.of(context)
+                                    .primaryTextTheme
+                                    .headline1
+                                    .copyWith(
+                                        fontSize: ScreenUtil()
+                                            .setSp(size.width * 0.07),
+                                        color: colorAnimation.value),
+                              ),
+                            ),
+                            AnimatedContainer(
+                              alignment: Alignment.center,
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              height: changeMail ? size.height * 0.6 : 0,
+                              child: AnimatedOpacity(
+                                duration: Duration(milliseconds: 500),
+                                opacity: mailChanging ? 1 : 0,
+                                child: Container(
+                                  height: size.height * 0.55,
+                                  width: size1.width,
+                                  alignment: Alignment.center,
+                                  child: Column(
+                                    children: <Widget>[
+                                      AnimatedContainer(
+                                        padding: EdgeInsets.only(
+                                            left: size.width * 0.05,
+                                            right: size.width * 0.05),
+                                        alignment: Alignment.centerLeft,
+                                        duration: Duration(milliseconds: 500),
+                                        curve: Curves.easeInOut,
+                                        height: size.height * 0.09,
+                                        width: width1,
+                                        decoration: BoxDecoration(
+                                            color: color1.withOpacity(
+                                                active1 ? 0.3 : 0.1),
+                                            borderRadius: BorderRadius.circular(
+                                                size.height * 0.1 / 2),
+                                            border: Border.all(
+                                                color: color1, width: 3)),
+                                        child: TextField(
+                                          focusNode: _masterPassFocus,
+                                          controller: _masterPassController,
+                                          autocorrect: false,
+                                          keyboardType:
+                                              TextInputType.visiblePassword,
+                                          textInputAction: TextInputAction.next,
+                                          obscureText: obs1,
+                                          enabled: true,
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.057)),
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = true;
+                                              width1 = size.width * 0.85;
+                                              active2 = false;
+                                              width2 = size.width * 0.75;
+                                              active3 = false;
+                                              width3 = size.width * 0.75;
+                                            });
+                                          },
+                                          onChanged: (value) {
+                                            color1 = Colors.white;
+                                            color2 = Colors.white;
+                                            color3 = Colors.white;
+
+                                            text = '';
+                                          },
+                                          onSubmitted: (value) {
+                                            fieldFocusChange(context,
+                                                _masterPassFocus, _emailFocus);
+
+                                            setState(() {
+                                              active1 = false;
+                                              width1 = size.width * 0.75;
+                                              active2 = true;
+                                              width2 = size.width * 0.85;
+                                            });
+                                          },
+                                          cursorColor: Colors.white,
+                                          decoration: InputDecoration(
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                obs1
+                                                    ? CustomIcons.eye_off
+                                                    : CustomIcons.eye,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: () {
+                                                setState(() {
+                                                  obs1 = !obs1;
+                                                });
+                                              },
+                                            ),
+                                            border: InputBorder.none,
+                                            hintText: masterPassField[lang],
+                                            hintStyle: Theme.of(context)
+                                                .primaryTextTheme
+                                                .headline2
+                                                .copyWith(
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.057),
+                                                    color: Colors.white
+                                                        .withOpacity(0.6)),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: size.height * 0.02,
+                                      ),
+                                      AnimatedContainer(
+                                        padding: EdgeInsets.only(
+                                            left: size.width * 0.05,
+                                            right: size.width * 0.05),
+                                        alignment: Alignment.centerLeft,
+                                        duration: Duration(milliseconds: 500),
+                                        curve: Curves.easeInOut,
+                                        height: size.height * 0.09,
+                                        width: width2,
+                                        decoration: BoxDecoration(
+                                            color: color2.withOpacity(
+                                                active2 ? 0.3 : 0.1),
+                                            borderRadius: BorderRadius.circular(
+                                                size.height * 0.1 / 2),
+                                            border: Border.all(
+                                                color: color2, width: 3)),
+                                        child: TextField(
+                                          focusNode: _emailFocus,
+                                          controller: _emailController,
+                                          autocorrect: false,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          textInputAction: TextInputAction.done,
+                                          enabled: true,
+                                          style: Theme.of(context)
+                                              .primaryTextTheme
+                                              .headline2
+                                              .copyWith(
+                                                  fontSize: ScreenUtil().setSp(
+                                                      size.width * 0.057)),
+                                          onTap: () {
+                                            setState(() {
+                                              active1 = false;
+                                              width1 = size.width * 0.75;
+                                              active2 = true;
+                                              width2 = size.width * 0.85;
+                                              active3 = false;
+                                              width3 = size.width * 0.75;
+                                            });
+                                          },
+                                          onChanged: (value) {
+                                            color1 = Colors.white;
+                                            color2 = Colors.white;
+                                            color3 = Colors.white;
+
+                                            text = '';
+                                          },
+                                          onSubmitted: (value) {
+                                            setState(() {
+                                              active2 = false;
+                                              width2 = size.width * 0.75;
+                                              active3 = true;
+                                              width3 = size.width * 0.85;
+                                            });
+                                          },
+                                          cursorColor: Colors.white,
+                                          decoration: InputDecoration(
+                                            border: InputBorder.none,
+                                            hintText: newEmail[lang],
+                                            hintStyle: Theme.of(context)
+                                                .primaryTextTheme
+                                                .headline2
+                                                .copyWith(
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.057),
+                                                    color: Colors.white
+                                                        .withOpacity(0.6)),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: size.height * 0.03,
+                                      ),
+                                      AnimatedContainer(
+                                        duration: Duration(milliseconds: 200),
+                                        curve: Curves.easeInOut,
+                                        width: size.width,
+                                        height: (text == '')
+                                            ? size.height * 0.058
+                                            : size.height * 0.108,
+                                        alignment: Alignment.center,
+                                        child: AnimatedOpacity(
+                                          duration: Duration(milliseconds: 200),
+                                          opacity: (text == '') ? 0 : 1,
+                                          child: Container(
+                                            padding: EdgeInsets.fromLTRB(
+                                                size.width * 0.04,
+                                                size.height * 0.008,
+                                                size.width * 0.04,
+                                                size.height * 0.008),
+                                            decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                        size.height)),
+                                            child: Text(
+                                              text,
+                                              style: Theme.of(context)
+                                                  .primaryTextTheme
+                                                  .headline2
+                                                  .copyWith(
+                                                    fontSize: ScreenUtil()
+                                                        .setSp(
+                                                            size.width * 0.047),
+                                                    color: Colors.red,
+                                                  ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: size.height * 0.02,
+                                      ),
+                                      Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          AnimatedContainer(
+                                            duration:
+                                                Duration(milliseconds: 500),
+                                            curve: Curves.easeInOut,
+                                            height: size.width * 0.25,
+                                            width: size.width * 0.25,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  Colors.white.withOpacity(0.5),
+                                                  Colors.white.withOpacity(0.5)
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      size.width * 0.25 / 2),
+                                            ),
+                                          ),
+                                          AnimatedContainer(
+                                            duration:
+                                                Duration(milliseconds: 500),
+                                            curve: Curves.easeInOut,
+                                            height: size.width * 0.2,
+                                            width: size.width * 0.2,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.bottomLeft,
+                                                end: Alignment.topRight,
+                                                colors: [
+                                                  Colors.white,
+                                                  Colors.white
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      size.width * 0.2 / 2),
+                                            ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              changeEmail();
+                                            },
+                                            child: Container(
+                                              height: size.width * 0.25,
+                                              width: size.width * 0.25,
+                                              color: Colors.transparent,
+                                              alignment: Alignment.center,
+                                              child: RotationTransition(
+                                                turns: Tween(
+                                                        begin: 0.0, end: 1.0)
+                                                    .animate(rotateController),
+                                                child: Container(
+                                                  child: Stack(
+                                                    alignment: Alignment.center,
+                                                    children: <Widget>[
+                                                      AnimatedOpacity(
+                                                        duration: Duration(
+                                                            milliseconds: 300),
+                                                        opacity:
+                                                            mailChanged ? 0 : 1,
+                                                        child: Icon(
+                                                          CustomIcons
+                                                              .right_open,
+                                                          size:
+                                                              size.width * 0.1,
+                                                          color: buttonColor[5],
+                                                        ),
+                                                      ),
+                                                      AnimatedOpacity(
+                                                        duration: Duration(
+                                                            milliseconds: 300),
+                                                        opacity:
+                                                            mailChanged ? 1 : 0,
+                                                        child: Icon(
+                                                          Icons.done,
+                                                          size:
+                                                              size.width * 0.1,
+                                                          color: buttonColor[5],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  height: changePass ? size.height * 0.82 : size.height * 0.12,
+                  width: size1.width,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        pressed5 = true;
+
+                        changePass = !changePass;
+
+                        changeMail = false;
+                        mailChanging = false;
+
+                        active1 = false;
+                        width1 = size.width * 0.75;
+                        color1 = Colors.white;
+                        active2 = false;
+                        width2 = size.width * 0.75;
+                        color2 = Colors.white;
+                        active3 = false;
+                        width3 = size.width * 0.75;
+                        color3 = Colors.white;
+
+                        text = '';
+                      });
+
+                      if (passChanging) {
+                        setState(() {
+                          passChanging = false;
+
+                          active1 = false;
+                          width1 = size.width * 0.75;
+                          color1 = Colors.white;
+                          active2 = false;
+                          width2 = size.width * 0.75;
+                          color2 = Colors.white;
+                          active3 = false;
+                          width3 = size.width * 0.75;
+                          color3 = Colors.white;
+
+                          text = '';
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            passChanging = true;
+                          });
+                        });
+                      }
+
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        setState(() {
+                          pressed5 = false;
+                        });
+                      });
+                    },
+                    onTapDown: (details) {
+                      if (!passChanging) {
+                        setState(() {
+                          pressed5 = true;
+                        });
+                      }
+                    },
+                    onLongPress: () {
+                      setState(() {
+                        pressed5 = true;
+                      });
+                    },
+                    onLongPressEnd: (details) {
+                      setState(() {
+                        pressed5 = true;
+
+                        changePass = !changePass;
+
+                        changeMail = false;
+                        mailChanging = false;
+
+                        active1 = false;
+                        width1 = size.width * 0.75;
+                        color1 = Colors.white;
+                        active2 = false;
+                        width2 = size.width * 0.75;
+                        color2 = Colors.white;
+                        active3 = false;
+                        width3 = size.width * 0.75;
+                        color3 = Colors.white;
+
+                        text = '';
+                      });
+
+                      if (passChanging) {
+                        setState(() {
+                          passChanging = false;
+
+                          active1 = false;
+                          width1 = size.width * 0.75;
+                          color1 = Colors.white;
+                          active2 = false;
+                          width2 = size.width * 0.75;
+                          color2 = Colors.white;
+                          active3 = false;
+                          width3 = size.width * 0.75;
+                          color3 = Colors.white;
+
+                          text = '';
+                        });
+                      } else {
+                        Future.delayed(Duration(milliseconds: 300), () {
+                          setState(() {
+                            passChanging = true;
+                          });
+                        });
+                      }
+
+                      Future.delayed(Duration(milliseconds: 300), () {
+                        setState(() {
+                          pressed5 = false;
+                        });
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      height: changePass
+                          ? size.height * 0.8
+                          : (pressed5
+                              ? size.height * 0.1 - size.width * 0.02
+                              : size.height * 0.1),
+                      width: pressed5
+                          ? size1.width * 0.92 - size.width * 0.02
+                          : size1.width * 0.92,
+                      child: AnimatedContainer(
+                        padding: EdgeInsets.only(
+                            left: size.width * 0.04, right: size.width * 0.04),
+                        alignment: Alignment.topCenter,
+                        height: size.height * 0.1,
+                        width: size1.width,
+                        duration: Duration(milliseconds: 700),
+                        decoration: BoxDecoration(
+                          borderRadius:
+                              BorderRadius.circular(size.height * 0.02),
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [bottomLeftColor[5], topRightColor[5]],
+                          ),
+                        ),
+                        child: Column(
+                          children: <Widget>[
+                            AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              alignment: Alignment.centerLeft,
+                              height: pressed5
                                   ? size.height * 0.1 - size.width * 0.02
                                   : size.height * 0.1,
                               width: size1.width * 0.92,
@@ -2057,654 +2748,6 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       fontSize: ScreenUtil().setSp(size.width * 0.08),
                       color: color2Animation.value),
                 ),
-                AnimatedContainer(
-                  duration: Duration(milliseconds: loggedIn ? 100 : 300),
-                  curve: Curves.easeInOut,
-                  height: signInField ? size.height * 0.82 : size.height * 0.12,
-                  width: size1.width,
-                  alignment: Alignment.center,
-                  child: GestureDetector(
-                    onTap: () async {
-                      setState(() {
-                        pressed5 = true;
-                      });
-
-                      if (!loggedIn) {
-                        setState(() {
-                          signInField = !signInField;
-
-                          changePass = false;
-                          resetField = false;
-
-                          passChanging = false;
-                          resetting = false;
-
-                          active1 = false;
-                          width1 = size.width * 0.75;
-                          color1 = Colors.white;
-                          active2 = false;
-                          width2 = size.width * 0.75;
-                          color3 = Colors.white;
-                          active3 = false;
-                          width3 = size.width * 0.75;
-                          color3 = Colors.white;
-
-                          text = '';
-                        });
-
-                        if (signingIn) {
-                          setState(() {
-                            signingIn = false;
-                          });
-                        } else {
-                          Future.delayed(Duration(milliseconds: 300), () {
-                            setState(() {
-                              signingIn = true;
-                            });
-                          });
-                        }
-                      } else {
-                        dynamic result = await _auth.signOut();
-
-                        print(result);
-
-                        if (result == null) {
-                          print('can not to log out');
-                        } else {
-                          print('logged out');
-                          setState(() {
-                            loggedIn = false;
-                            saveLoginState(false);
-                            saveEmail(null);
-                          });
-                        }
-
-                        Future.delayed(Duration(milliseconds: 300), () {
-                          setState(() {
-                            anim = false;
-                          });
-                        });
-                      }
-
-                      Future.delayed(Duration(milliseconds: anim ? 200 : 300),
-                          () {
-                        setState(() {
-                          pressed5 = false;
-                        });
-                      });
-                    },
-                    onTapDown: (details) {
-                      setState(() {
-                        pressed5 = true;
-                      });
-                    },
-                    onLongPress: () {
-                      setState(() {
-                        pressed5 = true;
-                      });
-                    },
-                    onLongPressEnd: (details) {
-                      setState(() {
-                        pressed5 = true;
-                      });
-
-                      if (!loggedIn) {
-                        setState(() {
-                          signInField = !signInField;
-                        });
-
-                        if (signingIn) {
-                          setState(() {
-                            signingIn = false;
-
-                            active1 = false;
-                            width1 = size.width * 0.75;
-                            color1 = Colors.white;
-                            active2 = false;
-                            width2 = size.width * 0.75;
-                            color3 = Colors.white;
-                            active3 = false;
-                            width3 = size.width * 0.75;
-                            color3 = Colors.white;
-
-                            text = '';
-                          });
-                        } else {
-                          Future.delayed(Duration(milliseconds: 300), () {
-                            setState(() {
-                              signingIn = true;
-                            });
-                          });
-                        }
-                      }
-
-                      Future.delayed(Duration(milliseconds: anim ? 200 : 300),
-                          () {
-                        setState(() {
-                          pressed5 = false;
-                        });
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: Duration(milliseconds: anim ? 100 : 300),
-                      curve: Curves.easeInOut,
-                      height: signInField
-                          ? size.height * 0.8
-                          : (pressed5
-                              ? size.height * 0.1 - size.width * 0.02
-                              : size.height * 0.1),
-                      width: pressed5
-                          ? size1.width * 0.92 - size.width * 0.02
-                          : size1.width * 0.92,
-                      child: AnimatedContainer(
-                        padding: EdgeInsets.only(
-                            left: size.width * 0.04, right: size.width * 0.04),
-                        alignment: Alignment.topCenter,
-                        height: size.height * 0.1,
-                        width: size1.width,
-                        duration: Duration(milliseconds: 700),
-                        decoration: BoxDecoration(
-                          borderRadius:
-                              BorderRadius.circular(size.height * 0.02),
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomLeft,
-                            end: Alignment.topRight,
-                            colors: [
-                              loggedIn
-                                  ? bottomLeftColor[2]
-                                  : bottomLeftColor[1],
-                              loggedIn ? topRightColor[2] : topRightColor[1]
-                            ],
-                          ),
-                        ),
-                        child: Column(
-                          children: <Widget>[
-                            AnimatedContainer(
-                              duration:
-                                  Duration(milliseconds: anim ? 100 : 300),
-                              curve: Curves.easeInOut,
-                              alignment: Alignment.centerLeft,
-                              height: pressed5
-                                  ? size.height * 0.1 - size.width * 0.02
-                                  : size.height * 0.1,
-                              width: size1.width * 0.92,
-                              child: Text(
-                                anim
-                                    ? signOutButton[lang]
-                                    : (reg
-                                        ? registerButton[lang]
-                                        : signInButton[lang]),
-                                style: Theme.of(context)
-                                    .primaryTextTheme
-                                    .headline1
-                                    .copyWith(
-                                        fontSize: ScreenUtil()
-                                            .setSp(size.width * 0.07),
-                                        color: colorAnimation.value),
-                              ),
-                            ),
-                            AnimatedContainer(
-                              alignment: Alignment.center,
-                              duration:
-                                  Duration(milliseconds: anim ? 100 : 300),
-                              curve: Curves.easeInOut,
-                              height: signInField ? size.height * 0.65 : 0,
-                              child: AnimatedOpacity(
-                                duration: Duration(milliseconds: 500),
-                                opacity: signingIn ? 1 : 0,
-                                child: Container(
-                                  height: size.height * 0.60,
-                                  width: size1.width,
-                                  alignment: Alignment.center,
-                                  child: Column(
-                                    children: <Widget>[
-                                      AnimatedContainer(
-                                        padding: EdgeInsets.only(
-                                            left: size.width * 0.05,
-                                            right: size.width * 0.05),
-                                        alignment: Alignment.centerLeft,
-                                        duration: Duration(milliseconds: 500),
-                                        curve: Curves.easeInOut,
-                                        height: size.height * 0.09,
-                                        width: width1,
-                                        decoration: BoxDecoration(
-                                            color: color1.withOpacity(
-                                                active1 ? 0.3 : 0.1),
-                                            borderRadius: BorderRadius.circular(
-                                                size.height * 0.1 / 2),
-                                            border: Border.all(
-                                                color: color1, width: 3)),
-                                        child: TextField(
-                                          focusNode: _emailFocus,
-                                          controller: _emailController,
-                                          autocorrect: false,
-                                          keyboardType:
-                                              TextInputType.emailAddress,
-                                          textInputAction: TextInputAction.next,
-                                          enabled: true,
-                                          style: Theme.of(context)
-                                              .primaryTextTheme
-                                              .headline2
-                                              .copyWith(
-                                                  fontSize: ScreenUtil().setSp(
-                                                      size.width * 0.057)),
-                                          onTap: () {
-                                            setState(() {
-                                              active1 = true;
-                                              width1 = size.width * 0.85;
-                                              active2 = false;
-                                              width2 = size.width * 0.75;
-                                            });
-                                          },
-                                          onChanged: (value) {
-                                            color1 = Colors.white;
-                                            color2 = Colors.white;
-
-                                            text = '';
-                                          },
-                                          onSubmitted: (value) {
-                                            fieldFocusChange(context,
-                                                _emailFocus, _masterPassFocus);
-
-                                            setState(() {
-                                              active1 = false;
-                                              width1 = size.width * 0.75;
-                                              active2 = true;
-                                              width2 = size.width * 0.85;
-                                            });
-                                          },
-                                          cursorColor: Colors.white,
-                                          decoration: InputDecoration(
-                                            border: InputBorder.none,
-                                            hintText: emailField[lang],
-                                            hintStyle: Theme.of(context)
-                                                .primaryTextTheme
-                                                .headline2
-                                                .copyWith(
-                                                    fontSize: ScreenUtil()
-                                                        .setSp(
-                                                            size.width * 0.057),
-                                                    color: Colors.white
-                                                        .withOpacity(0.6)),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: size.height * 0.02,
-                                      ),
-                                      AnimatedContainer(
-                                        padding: EdgeInsets.only(
-                                            left: size.width * 0.05,
-                                            right: size.width * 0.05),
-                                        alignment: Alignment.centerLeft,
-                                        duration: Duration(milliseconds: 500),
-                                        curve: Curves.easeInOut,
-                                        height: size.height * 0.09,
-                                        width: width2,
-                                        decoration: BoxDecoration(
-                                            color: color2.withOpacity(
-                                                active2 ? 0.3 : 0.1),
-                                            borderRadius: BorderRadius.circular(
-                                                size.height * 0.1 / 2),
-                                            border: Border.all(
-                                                color: color2, width: 3)),
-                                        child: TextField(
-                                          focusNode: _masterPassFocus,
-                                          controller: _masterPassController,
-                                          autocorrect: false,
-                                          keyboardType:
-                                              TextInputType.visiblePassword,
-                                          textInputAction: TextInputAction.done,
-                                          obscureText: obs2,
-                                          enabled: true,
-                                          style: Theme.of(context)
-                                              .primaryTextTheme
-                                              .headline2
-                                              .copyWith(
-                                                  fontSize: ScreenUtil().setSp(
-                                                      size.width * 0.057)),
-                                          onTap: () {
-                                            setState(() {
-                                              active1 = false;
-                                              width1 = size.width * 0.75;
-                                              active2 = true;
-                                              width2 = size.width * 0.85;
-                                            });
-                                          },
-                                          onChanged: (value) {
-                                            color1 = Colors.white;
-                                            color2 = Colors.white;
-
-                                            text = '';
-                                          },
-                                          onSubmitted: (value) {
-                                            setState(() {
-                                              active2 = false;
-                                              width2 = size.width * 0.75;
-                                            });
-                                          },
-                                          cursorColor: Colors.white,
-                                          decoration: InputDecoration(
-                                            suffixIcon: IconButton(
-                                              icon: Icon(
-                                                obs2
-                                                    ? CustomIcons.eye_off
-                                                    : CustomIcons.eye,
-                                                color: Colors.white,
-                                              ),
-                                              onPressed: () {
-                                                setState(() {
-                                                  obs2 = !obs2;
-                                                });
-                                              },
-                                            ),
-                                            border: InputBorder.none,
-                                            hintText: cloudPassword[lang],
-                                            hintStyle: Theme.of(context)
-                                                .primaryTextTheme
-                                                .headline2
-                                                .copyWith(
-                                                    fontSize: ScreenUtil()
-                                                        .setSp(
-                                                            size.width * 0.057),
-                                                    color: Colors.white
-                                                        .withOpacity(0.6)),
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: EdgeInsets.only(
-                                            left: size.width * 0.08,
-                                            right: size.width * 0.08),
-                                        height: size.height * 0.05,
-                                        width: size1.width,
-                                        alignment: Alignment.centerLeft,
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              reg = !reg;
-                                            });
-                                          },
-                                          child: Container(
-                                            child: Text(
-                                              reg
-                                                  ? signInButton[lang]
-                                                  : registerButton[lang],
-                                              style: Theme.of(context)
-                                                  .primaryTextTheme
-                                                  .headline2
-                                                  .copyWith(
-                                                      fontSize:
-                                                          size.width * 0.04,
-                                                      color: Colors.white
-                                                          .withOpacity(0.8)),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      AnimatedContainer(
-                                        duration: Duration(milliseconds: 200),
-                                        curve: Curves.easeInOut,
-                                        width: size.width,
-                                        height: (text == '')
-                                            ? size.height * 0.058
-                                            : size.height * 0.108,
-                                        alignment: Alignment.center,
-                                        child: AnimatedOpacity(
-                                          duration: Duration(milliseconds: 200),
-                                          opacity: (text == '') ? 0 : 1,
-                                          child: Container(
-                                            padding: EdgeInsets.fromLTRB(
-                                                size.width * 0.04,
-                                                size.height * 0.008,
-                                                size.width * 0.04,
-                                                size.height * 0.008),
-                                            decoration: BoxDecoration(
-                                                color: Colors.white,
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                        size.height)),
-                                            child: Text(
-                                              text,
-                                              style: Theme.of(context)
-                                                  .primaryTextTheme
-                                                  .headline2
-                                                  .copyWith(
-                                                    fontSize: ScreenUtil()
-                                                        .setSp(
-                                                            size.width * 0.047),
-                                                    color: Colors.red,
-                                                  ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: size.height * 0.02,
-                                      ),
-                                      Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.width * 0.25,
-                                            width: size.width * 0.25,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.bottomLeft,
-                                                end: Alignment.topRight,
-                                                colors: [
-                                                  Colors.white.withOpacity(0.5),
-                                                  Colors.white.withOpacity(0.5)
-                                                ],
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.width * 0.25 / 2),
-                                            ),
-                                          ),
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.width * 0.2,
-                                            width: size.width * 0.2,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.bottomLeft,
-                                                end: Alignment.topRight,
-                                                colors: [
-                                                  Colors.white,
-                                                  Colors.white
-                                                ],
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.width * 0.2 / 2),
-                                            ),
-                                          ),
-                                          GestureDetector(
-                                            onTap: () async {
-                                              print(reg);
-
-                                              checkPasswordWhenSignUp();
-
-                                              if (text == '') {
-                                                if (reg) {
-                                                  String result =
-                                                      await _auth.signUp(
-                                                          _emailController.text,
-                                                          _masterPassController
-                                                              .text);
-
-                                                  try {
-                                                    result = result
-                                                        .split(']')[1]
-                                                        .substring(1);
-                                                    print(
-                                                        'result is: ' + result);
-
-                                                    setState(() {
-                                                      text = result;
-                                                    });
-                                                  } catch (e) {
-                                                    print(e.toString());
-                                                    print(
-                                                        'result is: ' + result);
-
-                                                    setState(() {
-                                                      text = verifyEmail[lang];
-                                                    });
-                                                  }
-                                                } else {
-                                                  String result =
-                                                      await _auth.signIn(
-                                                          _emailController.text,
-                                                          _masterPassController
-                                                              .text);
-
-                                                  try {
-                                                    result = result
-                                                        .split(']')[1]
-                                                        .substring(1);
-                                                    print(
-                                                        'result is: ' + result);
-
-                                                    setState(() {
-                                                      text = result;
-                                                    });
-                                                  } catch (e) {
-                                                    if (result ==
-                                                        '!emailVerified') {
-                                                      print(e.toString());
-                                                      print('result is: ' +
-                                                          result);
-
-                                                      setState(() {
-                                                        text =
-                                                            verifyEmail[lang];
-                                                      });
-                                                    } else {
-                                                      print(e.toString());
-                                                      print('result is: ' +
-                                                          result);
-
-                                                      User user =
-                                                          await _auth.getUser();
-
-                                                      saveLoginState(true);
-                                                      saveEmail(user.email);
-
-                                                      print(
-                                                          '\n\n> Logged in:\nEmail: ${user.email}\nPassword: secured\n\n');
-
-                                                      //CLOSING
-
-                                                      rotateController1
-                                                          .forward();
-                                                      setState(() {
-                                                        loggedIn = true;
-                                                      });
-
-                                                      Future.delayed(
-                                                          Duration(
-                                                              milliseconds:
-                                                                  1000), () {
-                                                        setState(() {
-                                                          pressed5 = true;
-                                                          signingIn = false;
-                                                          signInField = false;
-                                                        });
-                                                      });
-
-                                                      Future.delayed(
-                                                          Duration(
-                                                              milliseconds:
-                                                                  1300), () {
-                                                        setState(() {
-                                                          pressed5 = false;
-                                                        });
-                                                      });
-
-                                                      Future.delayed(
-                                                          Duration(
-                                                              milliseconds:
-                                                                  2000), () {
-                                                        setState(() {
-                                                          _emailController
-                                                              .text = '';
-                                                          _masterPassController
-                                                              .text = '';
-
-                                                          anim = true;
-                                                        });
-                                                        print(anim);
-                                                      });
-                                                    }
-                                                  }
-                                                }
-                                              }
-                                            },
-                                            child: Container(
-                                              height: size.width * 0.25,
-                                              width: size.width * 0.25,
-                                              color: Colors.transparent,
-                                              alignment: Alignment.center,
-                                              child: RotationTransition(
-                                                turns: Tween(
-                                                        begin: 0.0, end: 1.0)
-                                                    .animate(rotateController1),
-                                                child: Container(
-                                                  child: Stack(
-                                                    alignment: Alignment.center,
-                                                    children: <Widget>[
-                                                      AnimatedOpacity(
-                                                        duration: Duration(
-                                                            milliseconds: 300),
-                                                        opacity:
-                                                            loggedIn ? 0 : 1,
-                                                        child: Icon(
-                                                          CustomIcons
-                                                              .right_open,
-                                                          size:
-                                                              size.width * 0.1,
-                                                          color: buttonColor[1],
-                                                        ),
-                                                      ),
-                                                      AnimatedOpacity(
-                                                        duration: Duration(
-                                                            milliseconds: 300),
-                                                        opacity:
-                                                            loggedIn ? 1 : 0,
-                                                        child: Icon(
-                                                          Icons.done,
-                                                          size:
-                                                              size.width * 0.1,
-                                                          color: buttonColor[2],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
                 Container(
                   height: size.height * 0.12,
                   width: size1.width,
@@ -2876,456 +2919,6 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                                   fontSize:
                                       ScreenUtil().setSp(size.width * 0.07),
                                   color: colorAnimation.value),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                AnimatedContainer(
-                  duration: Duration(milliseconds: loggedIn ? 100 : 300),
-                  curve: Curves.easeInOut,
-                  height: resetField ? size.height * 0.62 : size.height * 0.12,
-                  width: size1.width,
-                  alignment: Alignment.center,
-                  child: GestureDetector(
-                    onTap: () async {
-                      setState(() {
-                        pressed8 = true;
-
-                        changePass = false;
-                        signInField = false;
-
-                        passChanging = false;
-                        signingIn = false;
-
-                        active1 = false;
-                        width1 = size.width * 0.75;
-                        color1 = Colors.white;
-                        active2 = false;
-                        width2 = size.width * 0.75;
-                        color3 = Colors.white;
-                        active3 = false;
-                        width3 = size.width * 0.75;
-                        color3 = Colors.white;
-
-                        text = '';
-                      });
-
-                      if (!loggedIn) {
-                        setState(() {
-                          resetField = !resetField;
-                        });
-
-                        if (resetting) {
-                          setState(() {
-                            resetting = false;
-
-                            active1 = false;
-                            width1 = size.width * 0.75;
-                            color1 = Colors.white;
-                            active2 = false;
-                            width2 = size.width * 0.75;
-                            color3 = Colors.white;
-                            active3 = false;
-                            width3 = size.width * 0.75;
-                            color3 = Colors.white;
-
-                            _emailController.text = '';
-
-                            text = '';
-                          });
-                        } else {
-                          Future.delayed(Duration(milliseconds: 300), () {
-                            setState(() {
-                              resetting = true;
-                            });
-                          });
-                        }
-                      } else {
-                        User user = await _auth.getUser();
-                        _auth.resetPassword(user.email);
-                      }
-
-                      Future.delayed(Duration(milliseconds: anim ? 200 : 300),
-                          () {
-                        setState(() {
-                          pressed8 = false;
-                        });
-                      });
-                    },
-                    onTapDown: (details) {
-                      setState(() {
-                        pressed8 = true;
-                      });
-                    },
-                    onLongPress: () {
-                      setState(() {
-                        pressed8 = true;
-                      });
-                    },
-                    onLongPressEnd: (details) async {
-                      setState(() {
-                        pressed8 = true;
-
-                        changePass = false;
-                        signInField = false;
-
-                        passChanging = false;
-                        signingIn = false;
-
-                        active1 = false;
-                        width1 = size.width * 0.75;
-                        color1 = Colors.white;
-                        active2 = false;
-                        width2 = size.width * 0.75;
-                        color3 = Colors.white;
-                        active3 = false;
-                        width3 = size.width * 0.75;
-                        color3 = Colors.white;
-
-                        text = '';
-                      });
-
-                      if (!loggedIn) {
-                        setState(() {
-                          resetField = !resetField;
-                        });
-
-                        if (resetting) {
-                          setState(() {
-                            resetting = false;
-
-                            active1 = false;
-                            width1 = size.width * 0.75;
-                            color1 = Colors.white;
-                            active2 = false;
-                            width2 = size.width * 0.75;
-                            color3 = Colors.white;
-                            active3 = false;
-                            width3 = size.width * 0.75;
-                            color3 = Colors.white;
-
-                            text = '';
-                          });
-                        } else {
-                          Future.delayed(Duration(milliseconds: 300), () {
-                            setState(() {
-                              resetting = true;
-                            });
-                          });
-                        }
-                      } else {
-                        User user = await _auth.getUser();
-                        _auth.resetPassword(user.email);
-                      }
-
-                      Future.delayed(Duration(milliseconds: anim ? 200 : 300),
-                          () {
-                        setState(() {
-                          pressed8 = false;
-                        });
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: Duration(milliseconds: anim ? 100 : 300),
-                      curve: Curves.easeInOut,
-                      height: resetField
-                          ? size.height * 0.6
-                          : (pressed8
-                              ? size.height * 0.1 - size.width * 0.02
-                              : size.height * 0.1),
-                      width: pressed8
-                          ? size1.width * 0.92 - size.width * 0.02
-                          : size1.width * 0.92,
-                      child: AnimatedContainer(
-                        padding: EdgeInsets.only(
-                            left: size.width * 0.04, right: size.width * 0.04),
-                        alignment: Alignment.topCenter,
-                        height: size.height * 0.1,
-                        width: size1.width,
-                        duration: Duration(milliseconds: 700),
-                        decoration: BoxDecoration(
-                          borderRadius:
-                              BorderRadius.circular(size.height * 0.02),
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomLeft,
-                            end: Alignment.topRight,
-                            colors: [
-                              loggedIn
-                                  ? bottomLeftColor[2]
-                                  : bottomLeftColor[1],
-                              loggedIn ? topRightColor[2] : topRightColor[1]
-                            ],
-                          ),
-                        ),
-                        child: Column(
-                          children: <Widget>[
-                            AnimatedContainer(
-                              duration:
-                                  Duration(milliseconds: anim ? 100 : 300),
-                              curve: Curves.easeInOut,
-                              alignment: Alignment.centerLeft,
-                              height: pressed8
-                                  ? size.height * 0.1 - size.width * 0.02
-                                  : size.height * 0.1,
-                              width: size1.width * 0.92,
-                              child: Text(
-                                resetPasswordButton[lang],
-                                style: Theme.of(context)
-                                    .primaryTextTheme
-                                    .headline1
-                                    .copyWith(
-                                        fontSize: ScreenUtil()
-                                            .setSp(size.width * 0.07),
-                                        color: colorAnimation.value),
-                              ),
-                            ),
-                            AnimatedContainer(
-                              alignment: Alignment.center,
-                              duration:
-                                  Duration(milliseconds: anim ? 100 : 300),
-                              curve: Curves.easeInOut,
-                              height: resetField ? size.height * 0.45 : 0,
-                              child: AnimatedOpacity(
-                                duration: Duration(milliseconds: 500),
-                                opacity: resetting ? 1 : 0,
-                                child: Container(
-                                  height: size.height * 0.40,
-                                  width: size1.width,
-                                  alignment: Alignment.center,
-                                  child: Column(
-                                    children: <Widget>[
-                                      AnimatedContainer(
-                                        padding: EdgeInsets.only(
-                                            left: size.width * 0.05,
-                                            right: size.width * 0.05),
-                                        alignment: Alignment.centerLeft,
-                                        duration: Duration(milliseconds: 500),
-                                        curve: Curves.easeInOut,
-                                        height: size.height * 0.09,
-                                        width: width1,
-                                        decoration: BoxDecoration(
-                                            color: color1.withOpacity(
-                                                active1 ? 0.3 : 0.1),
-                                            borderRadius: BorderRadius.circular(
-                                                size.height * 0.1 / 2),
-                                            border: Border.all(
-                                                color: color1, width: 3)),
-                                        child: TextField(
-                                          controller: _emailController,
-                                          autocorrect: false,
-                                          keyboardType:
-                                              TextInputType.emailAddress,
-                                          textInputAction: TextInputAction.done,
-                                          enabled: true,
-                                          style: Theme.of(context)
-                                              .primaryTextTheme
-                                              .headline2
-                                              .copyWith(
-                                                  fontSize: ScreenUtil().setSp(
-                                                      size.width * 0.057)),
-                                          onTap: () {
-                                            setState(() {
-                                              active1 = true;
-                                              width1 = size.width * 0.85;
-                                              active2 = false;
-                                              width2 = size.width * 0.75;
-                                            });
-                                          },
-                                          onChanged: (value) {
-                                            color1 = Colors.white;
-                                            color2 = Colors.white;
-
-                                            text = '';
-                                          },
-                                          onSubmitted: (value) {
-                                            setState(() {
-                                              active1 = false;
-                                              width1 = size.width * 0.75;
-                                            });
-                                          },
-                                          cursorColor: Colors.white,
-                                          decoration: InputDecoration(
-                                            border: InputBorder.none,
-                                            hintText: emailField[lang],
-                                            hintStyle: Theme.of(context)
-                                                .primaryTextTheme
-                                                .headline2
-                                                .copyWith(
-                                                    fontSize: ScreenUtil()
-                                                        .setSp(
-                                                            size.width * 0.057),
-                                                    color: Colors.white
-                                                        .withOpacity(0.6)),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: size.height * 0.04,
-                                      ),
-                                      AnimatedContainer(
-                                        duration: Duration(milliseconds: 200),
-                                        curve: Curves.easeInOut,
-                                        width: size.width,
-                                        height: (text == '')
-                                            ? size.height * 0.058
-                                            : size.height * 0.108,
-                                        alignment: Alignment.center,
-                                        child: AnimatedOpacity(
-                                          duration: Duration(milliseconds: 200),
-                                          opacity: (text == '') ? 0 : 1,
-                                          child: Container(
-                                            padding: EdgeInsets.fromLTRB(
-                                                size.width * 0.04,
-                                                size.height * 0.008,
-                                                size.width * 0.04,
-                                                size.height * 0.008),
-                                            decoration: BoxDecoration(
-                                                color: Colors.white,
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                        size.height)),
-                                            child: Text(
-                                              text,
-                                              style: Theme.of(context)
-                                                  .primaryTextTheme
-                                                  .headline2
-                                                  .copyWith(
-                                                    fontSize: ScreenUtil()
-                                                        .setSp(
-                                                            size.width * 0.047),
-                                                    color: Colors.red,
-                                                  ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: size.height * 0.02,
-                                      ),
-                                      Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.width * 0.25,
-                                            width: size.width * 0.25,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.bottomLeft,
-                                                end: Alignment.topRight,
-                                                colors: [
-                                                  Colors.white.withOpacity(0.5),
-                                                  Colors.white.withOpacity(0.5)
-                                                ],
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.width * 0.25 / 2),
-                                            ),
-                                          ),
-                                          AnimatedContainer(
-                                            duration:
-                                                Duration(milliseconds: 500),
-                                            curve: Curves.easeInOut,
-                                            height: size.width * 0.2,
-                                            width: size.width * 0.2,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.bottomLeft,
-                                                end: Alignment.topRight,
-                                                colors: [
-                                                  Colors.white,
-                                                  Colors.white
-                                                ],
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.width * 0.2 / 2),
-                                            ),
-                                          ),
-                                          GestureDetector(
-                                            onTap: () async {
-                                              _auth
-                                                  .resetPassword(
-                                                      _emailController.text)
-                                                  .then((result) {
-                                                print('result is: ' + result.toString());
-
-                                                try {
-                                                  result = result
-                                                      .split(']')[1]
-                                                      .substring(1);
-                                                  print('result is: ' + result);
-
-                                                  setState(() {
-                                                    text = result;
-                                                  });
-                                                } catch (e) {
-                                                  print(e);
-                                                  print(
-                                                      '\n\n[v] password has been changed successfully!\n\n');
-                                                  setState(() {
-                                                    text = verifyEmail[lang];
-                                                  });
-                                                }
-                                              });
-                                            },
-                                            child: Container(
-                                              height: size.width * 0.25,
-                                              width: size.width * 0.25,
-                                              color: Colors.transparent,
-                                              alignment: Alignment.center,
-                                              child: RotationTransition(
-                                                turns: Tween(
-                                                        begin: 0.0, end: 1.0)
-                                                    .animate(rotateController1),
-                                                child: Container(
-                                                  child: Stack(
-                                                    alignment: Alignment.center,
-                                                    children: <Widget>[
-                                                      AnimatedOpacity(
-                                                        duration: Duration(
-                                                            milliseconds: 300),
-                                                        opacity:
-                                                            loggedIn ? 0 : 1,
-                                                        child: Icon(
-                                                          CustomIcons
-                                                              .right_open,
-                                                          size:
-                                                              size.width * 0.1,
-                                                          color: buttonColor[1],
-                                                        ),
-                                                      ),
-                                                      AnimatedOpacity(
-                                                        duration: Duration(
-                                                            milliseconds: 300),
-                                                        opacity:
-                                                            loggedIn ? 1 : 0,
-                                                        child: Icon(
-                                                          Icons.done,
-                                                          size:
-                                                              size.width * 0.1,
-                                                          color: buttonColor[2],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     ),

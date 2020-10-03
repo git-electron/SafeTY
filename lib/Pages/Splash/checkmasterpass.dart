@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:safety/Cloud/auth.dart';
 
 import 'package:safety/Settings/texts.dart';
 import 'package:safety/Settings/themes.dart';
@@ -31,6 +33,8 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
   Color color = Colors.white;
 
   double width;
+
+  final AuthService _auth = AuthService();
 
   void initState() {
     super.initState();
@@ -67,29 +71,58 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
     });
   }
 
-  void checkMasterPass() {
-    if (_controller.text != '') {
-      decryptPass(_controller.text).then((value) {
-        if (value) {
-          print('Success');
-          setState(() {
-            text = '';
+  void checkMasterPass() async {
+    if(_controller.text != ''){
+      getEmail().then((emails) async {
+        int i = 0;
 
-            transition = true;
-          });
-        } else {
-          setState(() {
-            text = incorrectPass[lang];
-            color = Colors.red;
-          });
+        String result = await _auth.signIn(emails[i], _controller.text);
+
+        while(i < emails.length){
+          try {
+            result = result.split(']')[1].substring(1);
+            print('[AUTH] result is: ' + result);
+
+            setState(() {
+              text = result;
+              color = Colors.red;
+            });
+          } catch (e) {
+            if (result == '!emailVerified') {
+              print(e.toString());
+              print('[AUTH] result is: ' + result);
+
+              setState(() {
+                text = verifyEmail[lang];
+              });
+            } else {
+              print(e.toString());
+              print('[AUTH] result is: ' + result);
+
+              User user = await _auth.getUser();
+
+              saveLoginState(true);
+              saveEmail([user.email]);
+
+              generateKeyFromPassword(_controller.text);
+
+              print(
+                  '\n\n[AUTH] Logged in:\nEmail: ${user.email}\nPassword: secured\n\n');
+
+              return;
+            }
+          }
+
+          i++;
         }
       });
     } else {
       setState(() {
-        text = enterMasterPass[lang];
+        text = enterPass[lang];
         color = Colors.red;
       });
     }
+
 
     print(text);
   }
@@ -222,7 +255,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
         AnimatedContainer(
           duration: Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          width: size.width,
+          width: size1.width * 0.95,
           height: (text == '') ? size.height * 0.058 : size.height * 0.108,
           alignment: Alignment.center,
           child: AnimatedOpacity(

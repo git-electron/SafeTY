@@ -68,25 +68,4 @@ class AuthService {
       return null;
     }
   }
-
-  Future resetPassword(email) async {
-    //TODO: Password reset
-    try {
-      //String result = '';
-      dynamic result = _auth.sendPasswordResetEmail(email: email).whenComplete(() {
-        print('email sent');
-        //result = 'successful';
-      }).catchError((error) {
-        print('error: ' + error.toString());
-        //result = error.toString();
-      });
-
-
-
-      return result;
-    } catch (e) {
-      print(e.toString());
-      return e.toString();
-    }
-  }
 }
