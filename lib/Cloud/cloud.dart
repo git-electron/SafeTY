@@ -12,11 +12,12 @@ class DatabaseService {
       List<dynamic> devices, String uid, String device) async {
     return await usersCollection
         .doc(uid)
-        .set({'$device': passwords, 'devices': devices});
+        .set({'$device': passwords, 'devices': devices}, SetOptions(merge: true));
   }
 
   Future getUserData(id) async {
-    return await usersCollection.doc(id).get();
+    DocumentSnapshot doc = await usersCollection.doc(id).get();
+    return doc;
   }
 
   Stream<QuerySnapshot> get users {

@@ -101,6 +101,7 @@ class CreateAccountState extends State<CreateAccount> {
       setState(() {
         text = enterEmail[lang];
         color1 = Colors.red;
+        loadingState = false;
       });
     }
 
@@ -119,12 +120,14 @@ class CreateAccountState extends State<CreateAccount> {
         setState(() {
           text = less[lang];
           color2 = Colors.red;
+          loadingState = false;
         });
       }
     } else {
       setState(() {
         text = enterMasterPass[lang];
         color2 = Colors.red;
+        loadingState = false;
       });
     }
 
@@ -154,15 +157,21 @@ class CreateAccountState extends State<CreateAccount> {
 
           setState(() {
             text = result;
+            loadingState = false;
           });
         } catch (e) {
           if (result == '!emailVerified') {
             print(e.toString());
             print('[AUTH] result is: ' + result);
 
+            User user = await _auth.getUser();
+
             setState(() {
               text = verifyEmail[lang];
+              loadingState = false;
             });
+
+            user.sendEmailVerification();
           } else {
             print(e.toString());
             print('[AUTH] result is: ' + result);
@@ -176,18 +185,24 @@ class CreateAccountState extends State<CreateAccount> {
 
             print(
                 '\n\n[AUTH] Logged in:\nEmail: ${user.email}\nPassword: secured\n\n');
+
+            setState(() {
+              loadingState = false;
+            });
           }
         }
       } else {
         setState(() {
           text = enterPass[lang];
           color2 = Colors.red;
+          loadingState = false;
         });
       }
     } else {
       setState(() {
         text = enterEmail[lang];
         color1 = Colors.red;
+        loadingState = false;
       });
     }
   }
@@ -204,6 +219,7 @@ class CreateAccountState extends State<CreateAccount> {
 
       setState(() {
         text = result;
+        loadingState = false;
       });
     } catch (e) {
       print(e.toString());
@@ -211,6 +227,7 @@ class CreateAccountState extends State<CreateAccount> {
 
       setState(() {
         text = verifyEmail[lang];
+        loadingState = false;
       });
     }
   }

@@ -11,7 +11,7 @@ description: Open-Source free and secure password manager & generator.
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.0.0+1
+version: 1.1.1+6
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
@@ -39,6 +39,8 @@ dependencies:
   cloud_firestore: ^0.14.0+2
   firebase_core: ^0.5.0
   device_info: ^0.4.2+8
+  flutter_spinkit: ^4.1.2
+  connectivity: ^0.4.9+3
 
 dev_dependencies:
   flutter_test:

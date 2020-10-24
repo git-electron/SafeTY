@@ -86,6 +86,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
             setState(() {
               text = result;
               color = Colors.red;
+              loadingState = false;
             });
           } catch (e) {
             if (result == '!emailVerified') {
@@ -94,7 +95,11 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
 
               setState(() {
                 text = verifyEmail[lang];
+                loadingState = false;
               });
+
+              User user = await _auth.getUser();
+              user.sendEmailVerification();
             } else {
               print(e.toString());
               print('[AUTH] result is: ' + result);
@@ -109,6 +114,10 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
               print(
                   '\n\n[AUTH] Logged in:\nEmail: ${user.email}\nPassword: secured\n\n');
 
+              setState(() {
+                loadingState = false;
+              });
+
               return;
             }
           }
@@ -120,6 +129,7 @@ class _CheckMasterPassState extends State<CheckMasterPass> {
       setState(() {
         text = enterPass[lang];
         color = Colors.red;
+        loadingState = false;
       });
     }
 

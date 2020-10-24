@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 import 'package:flutter_string_encryption/flutter_string_encryption.dart';
 import 'package:circular_reveal_animation/circular_reveal_animation.dart';
@@ -181,7 +182,8 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
     });
 
     Future.delayed(Duration(milliseconds: 150), () {
-      ScreenUtil.init(context, width: size.width, height: size.height, allowFontScaling: false);
+      ScreenUtil.init(context,
+          width: size.width, height: size.height, allowFontScaling: false);
     });
 
     Future.delayed(Duration(milliseconds: 1500), () {
@@ -251,12 +253,15 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
         Future.delayed(Duration(milliseconds: 600), () {
           timer.cancel();
 
-          Navigator.pushReplacement(context,
+          Navigator.pushReplacement(
+            context,
             PageRouteBuilder(
               pageBuilder: (c, a1, a2) => Home(),
-              transitionsBuilder: (c, anim, a2, child) => FadeTransition(opacity: anim, child: child),
+              transitionsBuilder: (c, anim, a2, child) =>
+                  FadeTransition(opacity: anim, child: child),
               transitionDuration: Duration(milliseconds: 1000),
-            ),);
+            ),
+          );
         });
       }
     });
@@ -431,6 +436,7 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
                         if (page == 'checkMasterPass') {
                           setState(() {
                             startChecking = true;
+                            loadingState = true;
                           });
                         }
                         if (page == 'setLanguage') {
@@ -444,6 +450,7 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
                         if (page == 'setMasterPass') {
                           setState(() {
                             startSetting = true;
+                            loadingState = true;
                           });
                         }
                       },
@@ -457,14 +464,27 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
                               .animate(rotateController),
                           child: Container(
                               child: circle
-                                  ? AnimatedOpacity(
-                                      duration: Duration(milliseconds: 300),
-                                      opacity: circle ? 1 : 0,
-                                      child: Icon(
-                                        CustomIcons.right_open,
-                                        size: size.width * 0.1,
-                                        color: buttonColor[theme],
-                                      ),
+                                  ? Stack(
+                                      alignment: Alignment.center,
+                                      children: <Widget>[
+                                        AnimatedOpacity(
+                                          duration: Duration(milliseconds: 300),
+                                          opacity: circle ? (loadingState ? 0 : 1) : 0,
+                                          child: Icon(
+                                            CustomIcons.right_open,
+                                            size: size.width * 0.1,
+                                            color: buttonColor[theme],
+                                          ),
+                                        ),
+                                        AnimatedOpacity(
+                                          duration: Duration(milliseconds: 300),
+                                          opacity: circle ? (loadingState ? 1 : 0) : 0,
+                                          child: SpinKitFadingCube(
+                                            size: size.width * 0.07,
+                                            color: buttonColor[theme],
+                                          )
+                                        ),
+                                      ],
                                     )
                                   : AnimatedOpacity(
                                       duration: Duration(milliseconds: 300),

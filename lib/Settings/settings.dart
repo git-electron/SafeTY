@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:device_info/device_info.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_string_encryption/flutter_string_encryption.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:safety/Database/DBHelper.dart';
 import 'package:safety/Database/password.dart';
 import 'package:safety/Settings/texts.dart';
@@ -74,6 +77,9 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   bool anim = false;
   bool reg = false;
 
+  bool loading1 = false;
+  bool loading2 = false;
+
   double width1 = size.width * 0.75;
   double width2 = size.width * 0.75;
   double width3 = size.width * 0.75;
@@ -82,7 +88,13 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   Color color2 = Colors.white;
   Color color3 = Colors.white;
 
+  Color bottomLeftColor1 = bottomLeftColor[1];
+  Color topRightColor1 = topRightColor[1];
+  Color bottomLeftColor2 = bottomLeftColor[1];
+  Color topRightColor2 = topRightColor[1];
+
   String text = '';
+  String logs = '';
 
   int t = 0;
 
@@ -111,11 +123,16 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
 
   final db = DBHelper();
 
+  FToast fToast;
+
   final AuthService _auth = AuthService();
   final DatabaseService _database = DatabaseService();
 
   void initState() {
     super.initState();
+
+    fToast = FToast();
+    fToast.init(context);
 
     getLangState().then((value) {
       setState(() {
@@ -242,39 +259,57 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
           if (text == '') {
             User user = await _auth.getUser();
             try {
-              user.updateEmail(_emailController.text);
-              getEmail().then((emails) {
-                emails.add(_emailController.text);
-                saveEmail(emails);
-              });
+              try {
+                String result = await _auth.signIn(_emailController.text, 'a');
+
+                if (!result
+                    .toString()
+                    .toLowerCase()
+                    .contains('the password is invalid')) {
+                  user.updateEmail(_emailController.text);
+                  user.sendEmailVerification();
+                  getEmail().then((emails) {
+                    emails.add(_emailController.text);
+                    saveEmail(emails);
+
+                    rotateController.forward();
+                    setState(() {
+                      mailChanged = true;
+                    });
+                    FocusScope.of(context).unfocus();
+                    Future.delayed(Duration(milliseconds: 1000), () {
+                      setState(() {
+                        mailChanging = false;
+                        changeMail = false;
+                      });
+                    });
+
+                    Future.delayed(Duration(milliseconds: 2000), () {
+                      rotateController.reverse();
+                      setState(() {
+                        mailChanged = false;
+
+                        _masterPassController.text = '';
+                        _emailController.text = '';
+                      });
+                    });
+                  });
+                } else {
+                  print('This email is already in use');
+                  setState(() {
+                    text = inUse[lang];
+                  });
+                  return;
+                }
+              } catch (e) {
+                print(e.toString());
+              }
             } catch (e) {
               setState(() {
                 print(e.toString());
                 text = e.toString();
               });
             }
-
-            rotateController.forward();
-            setState(() {
-              mailChanged = true;
-            });
-            FocusScope.of(context).unfocus();
-            Future.delayed(Duration(milliseconds: 1000), () {
-              setState(() {
-                mailChanging = false;
-                changeMail = false;
-              });
-            });
-
-            Future.delayed(Duration(milliseconds: 2000), () {
-              rotateController.reverse();
-              setState(() {
-                mailChanged = false;
-
-                _masterPassController.text = '';
-                _emailController.text = '';
-              });
-            });
           } else {
             print('false');
           }
@@ -517,7 +552,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
       int i = 0;
       bool exists = false;
       while (i < devices.length) {
-        if(devices[i] == device.androidId){
+        if (devices[i] == device.androidId) {
           setState(() {
             exists = true;
           });
@@ -526,7 +561,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
         i++;
       }
 
-      if(!exists){
+      if (!exists) {
         devices.add(device.androidId);
       }
 
@@ -541,6 +576,43 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   }
 
   void backup() async {
+    setState(() {
+      loading1 = true;
+    });
+
+    ConnectivityResult _result = await Connectivity().checkConnectivity();
+    if (_result == ConnectivityResult.none) {
+      print('No connection!');
+      setState(() {
+        bottomLeftColor1 = topRightColor[2];
+      });
+      Future.delayed(Duration(milliseconds: 100), () {
+        setState(() {
+          loading1 = false;
+        });
+      });
+      Future.delayed(Duration(milliseconds: 300), () {
+        setState(() {
+          bottomLeftColor1 = bottomLeftColor[2];
+          topRightColor1 = topRightColor[2];
+        });
+      });
+      Future.delayed(Duration(milliseconds: 2000), () {
+        setState(() {
+          bottomLeftColor1 = topRightColor[1];
+          topRightColor1 = bottomLeftColor[2];
+        });
+      });
+      Future.delayed(Duration(milliseconds: 2300), () {
+        setState(() {
+          bottomLeftColor1 = bottomLeftColor[1];
+          topRightColor1 = topRightColor[1];
+        });
+      });
+
+      return;
+    }
+
     int i = 0;
 
     User user = await _auth.getUser();
@@ -580,7 +652,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
       int index = 0;
       bool exists = false;
       while (index < devices.length) {
-        if(devices[index] == device.androidId){
+        if (devices[index] == device.androidId) {
           setState(() {
             exists = true;
           });
@@ -589,87 +661,291 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
         index++;
       }
 
-      if(!exists){
+      if (!exists) {
         devices.add(device.androidId);
       }
 
       print(passwords);
-      _database.updateUserData(passwords, devices, user.uid, device.androidId);
+      try {
+        _database.updateUserData(
+            passwords, devices, user.uid, device.androidId);
+        print('successful');
+        setState(() {
+          loading1 = false;
+          bottomLeftColor1 = topRightColor[5];
+        });
+        Future.delayed(Duration(milliseconds: 300), () {
+          setState(() {
+            bottomLeftColor1 = bottomLeftColor[5];
+            topRightColor1 = topRightColor[5];
+          });
+        });
+        Future.delayed(Duration(milliseconds: 2000), () {
+          setState(() {
+            bottomLeftColor1 = topRightColor[1];
+            topRightColor1 = bottomLeftColor[5];
+          });
+        });
+        Future.delayed(Duration(milliseconds: 2300), () {
+          setState(() {
+            bottomLeftColor1 = bottomLeftColor[1];
+            topRightColor1 = topRightColor[1];
+          });
+        });
+      } catch (e) {
+        print(e.toString());
+        setState(() {
+          loading1 = false;
+          bottomLeftColor1 = topRightColor[2];
+        });
+        Future.delayed(Duration(milliseconds: 300), () {
+          setState(() {
+            bottomLeftColor1 = bottomLeftColor[2];
+            topRightColor1 = topRightColor[2];
+          });
+        });
+        Future.delayed(Duration(milliseconds: 2000), () {
+          setState(() {
+            bottomLeftColor1 = topRightColor[1];
+            topRightColor1 = bottomLeftColor[2];
+          });
+        });
+        Future.delayed(Duration(milliseconds: 2300), () {
+          setState(() {
+            bottomLeftColor1 = bottomLeftColor[1];
+            topRightColor1 = topRightColor[1];
+          });
+        });
+      }
     });
+  }
+
+  void showToast(String text) {
+    Widget toast = Container(
+      padding: EdgeInsets.fromLTRB(size.width * 0.05, size.width * 0.02,
+          size.width * 0.05, size.width * 0.02),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+            begin: Alignment.bottomLeft,
+            end: Alignment.topRight,
+            colors: [
+              bottomLeftColor[theme].withOpacity(0.4),
+              topRightColor[theme].withOpacity(0.4)
+            ]),
+        borderRadius: BorderRadius.circular(size.height),
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context)
+            .primaryTextTheme
+            .headline2
+            .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.057)),
+      ),
+    );
+
+    fToast.showToast(
+      child: toast,
+      toastDuration: Duration(seconds: 2),
+    );
   }
 
   void sync() async {
     print('\n\nSyncing...\n\n');
 
+    setState(() {
+      loading2 = true;
+    });
+
     int deviceIndex = 0;
+
+    ConnectivityResult _result = await Connectivity().checkConnectivity();
+    if (_result == ConnectivityResult.none) {
+      print('No connection!');
+      setState(() {
+        bottomLeftColor2 = topRightColor[2];
+      });
+      Future.delayed(Duration(milliseconds: 100), () {
+        setState(() {
+          loading2 = false;
+        });
+      });
+      Future.delayed(Duration(milliseconds: 300), () {
+        setState(() {
+          bottomLeftColor2 = bottomLeftColor[2];
+          topRightColor2 = topRightColor[2];
+        });
+      });
+      Future.delayed(Duration(milliseconds: 2000), () {
+        setState(() {
+          bottomLeftColor2 = topRightColor[1];
+          topRightColor2 = bottomLeftColor[2];
+        });
+      });
+      Future.delayed(Duration(milliseconds: 2300), () {
+        setState(() {
+          bottomLeftColor2 = bottomLeftColor[1];
+          topRightColor2 = topRightColor[1];
+        });
+      });
+
+      return;
+    }
 
     User user = await _auth.getUser();
 
-    DocumentSnapshot doc = await _database.getUserData(user.uid);
-    List<dynamic> devices = doc.get('devices');
-    List passwordsFromDB = [];
+    try {
+      try {
+        DocumentSnapshot document = await _database.getUserData(user.uid);
+        print('document got successfully: ${document.id}');
+      } catch(e) {
+        print(e);
+        setState(() {
+          logs = 'An exception when getting a document: ${e.toString()}';
+          loading2 = false;
+          bottomLeftColor2 = topRightColor[2];
+        });
+      }
+      DocumentSnapshot doc = await _database.getUserData(user.uid);
+      print('doc:' + doc.toString());
 
-    db.getPass().then((value) {
+      try {
+        List<dynamic> field = doc.get('devices');
+        print('field got successfully: ${field.length}');
+      } catch(e) {
+        print(e);
+        setState(() {
+          logs = 'An exception when getting a field: ${e.toString()}';
+          loading2 = false;
+          bottomLeftColor2 = topRightColor[2];
+        });
+      }
+
+      List<dynamic> devices = doc.get('devices');
+      print('field:' + devices.toString());
+
+      List passwordsFromDB = [];
+
+      print(devices);
+
       setState(() {
-        passwordsFromDB = value;
+        bottomLeftColor1 = Colors.black;
       });
 
-      while (deviceIndex < devices.length) {
-        int passwordIndex = 0;
+      db.getPass().then((value) {
+        setState(() {
+          passwordsFromDB = value;
+            bottomLeftColor1 = Colors.deepOrangeAccent;
+        });
 
-        List<dynamic> passwords = doc.get('${devices[deviceIndex]}');
+        while (deviceIndex < devices.length) {
+          int passwordIndex = 0;
 
-        while (passwordIndex < passwords.length) {
-          bool similar = false;
+          List<dynamic> passwords = doc.get('${devices[deviceIndex]}');
 
-          Map<String, dynamic> passFromCloud = {
-            'title': passwords[passwordIndex]['title'],
-            'pass': passwords[passwordIndex]['pass'],
-            'name': passwords[passwordIndex]['name'],
-            'link': passwords[passwordIndex]['link'],
-            'sortDate': passwords[passwordIndex]['sortDate'],
-          };
+          setState(() {
+            bottomLeftColor1 = Colors.white;
+          });
 
-          print('> Cloud response:\n' + passFromCloud.toString() + '\n\n');
+          while (passwordIndex < passwords.length) {
+            bool similar = false;
 
-          int index = 0;
+            Map<String, dynamic> passFromCloud = {
+              'title': passwords[passwordIndex]['title'],
+              'pass': passwords[passwordIndex]['pass'],
+              'name': passwords[passwordIndex]['name'],
+              'link': passwords[passwordIndex]['link'],
+              'sortDate': passwords[passwordIndex]['sortDate'],
+            };
 
-          while (index < passwordsFromDB.length) {
-            Password password = passwordsFromDB[index];
+            print('> Cloud response:\n' + passFromCloud.toString() + '\n\n');
 
-            if (passwords[passwordIndex]['sortDate'] == password.sortDate) {
-              print('Passwords are similar');
-              setState(() {
-                similar = true;
-              });
+            int index = 0;
+
+            while (index < passwordsFromDB.length) {
+              Password password = passwordsFromDB[index];
+
+              if (passwords[passwordIndex]['sortDate'] == password.sortDate) {
+                print('Passwords are similar');
+                setState(() {
+                  similar = true;
+                });
+              }
+
+              index++;
             }
 
-            index++;
+            if (!similar) {
+              print(
+                  '\n\nResult for ${passwords[passwordIndex]['title']}: will be pushed into db');
+
+              Password password = Password(
+                  passwords[passwordIndex]['title'],
+                  passwords[passwordIndex]['pass'],
+                  passwords[passwordIndex]['name'],
+                  passwords[passwordIndex]['link'],
+                  passwords[passwordIndex]['sortDate']);
+              db.savePass(password);
+              print('[v] saved\n\n');
+            } else {
+              print(
+                  '\n\nResult for ${passwords[passwordIndex]['title']}: will NOT be pushed into db\n\n');
+            }
+
+            passwordIndex++;
           }
 
-          if (!similar) {
-            print(
-                '\n\nResult for ${passwords[passwordIndex]['title']}: will be pushed into db');
-
-            Password password = Password(
-                passwords[passwordIndex]['title'],
-                passwords[passwordIndex]['pass'],
-                passwords[passwordIndex]['name'],
-                passwords[passwordIndex]['link'],
-                passwords[passwordIndex]['sortDate']);
-            db.savePass(password);
-            print('[v] saved\n\n');
-          } else {
-            print(
-                '\n\nResult for ${passwords[passwordIndex]['title']}: will NOT be pushed into db\n\n');
-          }
-
-          passwordIndex++;
+          deviceIndex++;
         }
 
-        deviceIndex++;
-      }
-    });
+        setState(() {
+          loading2 = false;
+          bottomLeftColor2 = topRightColor[5];
+        });
+        Future.delayed(Duration(milliseconds: 300), () {
+          setState(() {
+            bottomLeftColor2 = bottomLeftColor[5];
+            topRightColor2 = topRightColor[5];
+          });
+        });
+        Future.delayed(Duration(milliseconds: 2000), () {
+          setState(() {
+            bottomLeftColor2 = topRightColor[1];
+            topRightColor2 = bottomLeftColor[5];
+          });
+        });
+        Future.delayed(Duration(milliseconds: 2300), () {
+          setState(() {
+            bottomLeftColor2 = bottomLeftColor[1];
+            topRightColor2 = topRightColor[1];
+          });
+        });
+      });
+    } catch (e) {
+      print(e);
+      setState(() {
+        logs = e.toString();
+        loading2 = false;
+        bottomLeftColor2 = topRightColor[2];
+      });
+      Future.delayed(Duration(milliseconds: 300), () {
+        setState(() {
+          bottomLeftColor2 = bottomLeftColor[2];
+          topRightColor2 = topRightColor[2];
+        });
+      });
+      Future.delayed(Duration(milliseconds: 2000), () {
+        setState(() {
+          bottomLeftColor2 = topRightColor[1];
+          topRightColor2 = bottomLeftColor[2];
+        });
+      });
+      Future.delayed(Duration(milliseconds: 2300), () {
+        setState(() {
+          bottomLeftColor2 = bottomLeftColor[1];
+          topRightColor2 = topRightColor[1];
+        });
+      });
+    }
   }
 
   Future<bool> closeSettings() async {
@@ -2814,23 +3090,38 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                             end: Alignment.topRight,
                             colors: [
                               loggedIn
-                                  ? bottomLeftColor[1]
+                                  ? bottomLeftColor1
                                   : Color.fromRGBO(200, 200, 200, 1),
                               loggedIn
-                                  ? topRightColor[1]
+                                  ? topRightColor1
                                   : Color.fromRGBO(160, 160, 160, 1)
                             ],
                           ),
                         ),
-                        child: Text(
-                          backupButton[lang],
-                          style: Theme.of(context)
-                              .primaryTextTheme
-                              .headline1
-                              .copyWith(
-                                  fontSize:
-                                      ScreenUtil().setSp(size.width * 0.07),
-                                  color: colorAnimation.value),
+                        child: Row(
+                          children: <Widget>[
+                            Text(
+                              backupButton[lang],
+                              style: Theme.of(context)
+                                  .primaryTextTheme
+                                  .headline1
+                                  .copyWith(
+                                      fontSize:
+                                          ScreenUtil().setSp(size.width * 0.07),
+                                      color: colorAnimation.value),
+                            ),
+                            SizedBox(
+                              width: size.width * 0.05,
+                            ),
+                            AnimatedOpacity(
+                              duration: Duration(milliseconds: 300),
+                              opacity: loading1 ? 1 : 0,
+                              child: SpinKitFadingCube(
+                                size: size.width * 0.05,
+                                color: colorAnimation.value,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -2902,23 +3193,38 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                             end: Alignment.topRight,
                             colors: [
                               loggedIn
-                                  ? bottomLeftColor[1]
+                                  ? bottomLeftColor2
                                   : Color.fromRGBO(200, 200, 200, 1),
                               loggedIn
-                                  ? topRightColor[1]
+                                  ? topRightColor2
                                   : Color.fromRGBO(160, 160, 160, 1)
                             ],
                           ),
                         ),
-                        child: Text(
-                          syncButton[lang],
-                          style: Theme.of(context)
-                              .primaryTextTheme
-                              .headline1
-                              .copyWith(
-                                  fontSize:
-                                      ScreenUtil().setSp(size.width * 0.07),
-                                  color: colorAnimation.value),
+                        child: Row(
+                          children: <Widget>[
+                            Text(
+                              syncButton[lang],
+                              style: Theme.of(context)
+                                  .primaryTextTheme
+                                  .headline1
+                                  .copyWith(
+                                      fontSize:
+                                          ScreenUtil().setSp(size.width * 0.07),
+                                      color: colorAnimation.value),
+                            ),
+                            SizedBox(
+                              width: size.width * 0.05,
+                            ),
+                            AnimatedOpacity(
+                              duration: Duration(milliseconds: 300),
+                              opacity: loading2 ? 1 : 0,
+                              child: SpinKitFadingCube(
+                                size: size.width * 0.05,
+                                color: colorAnimation.value,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -3064,6 +3370,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                                   height: size.height * 0.28,
                                   width: size1.width,
                                   alignment: Alignment.center,
+                                    child: Text(logs)
                                 ),
                               ),
                             ),

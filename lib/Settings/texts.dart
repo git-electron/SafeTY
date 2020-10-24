@@ -88,6 +88,7 @@ var setLightTheme = ['Светлая тема', 'Light theme'];
 var changeEmailButton = ['Сменить почту', 'Change email'];
 var changeMasterPassButton = ['Сменить мастер-пароль', 'Change masterpass'];
 var newEmail = ['Новая почта', 'New email'];
+var inUse = ['Эта почта уже используется', 'This email is already in use'];
 var cloud = ['Облако', 'Cloud'];
 var backupButton = ['Загрузить на сервер', 'Backup'];
 var syncButton = ['Синхронизировать', 'Sync'];

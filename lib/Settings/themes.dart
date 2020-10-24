@@ -57,6 +57,8 @@ var list = true;
 
 var generated = '';
 
+var loadingState = false;
+
 //vars
 
 var names = ['Purple (default)', 'Blue', 'Red', 'Orange', 'Pink', 'Green'];

@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1052190982329-1jv73du9fisqtn9j77ildkv5ri7ghqf5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "electron.safety",
+            "certificate_hash": "5d9d283118964f28a46b6cd4033f9239585d5fd8"
+          }
+        },
+        {
           "client_id": "1052190982329-461lhmna55qq2ibjun266osqbp6nig6l.apps.googleusercontent.com",
           "client_type": 3
         }
