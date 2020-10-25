@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
-import 'package:flutter_string_encryption/flutter_string_encryption.dart';
 import 'package:circular_reveal_animation/circular_reveal_animation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
@@ -16,10 +15,8 @@ import 'package:safety/Pages/Splash/settheme.dart';
 import 'package:safety/Pages/Splash/setmasterpass.dart';
 
 import 'package:safety/Pages/Home/home.dart';
-import 'file:///E:/Programs/Flutter/Projects/Developing/safety/lib/Cloud/auth.dart';
 import 'package:safety/Utils/scrollConfig.dart';
 import 'package:safety/functions.dart';
-import 'package:safety/Settings/texts.dart';
 import 'package:safety/Settings/themes.dart';
 import 'package:safety/custom_icons_icons.dart';
 
@@ -318,6 +315,7 @@ class _SplashAnimState extends State<SplashAnim> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     Size size1 = MediaQuery.of(context).size;
 
     return Scaffold(

@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:safety/Settings/texts.dart';
 import 'package:safety/Settings/themes.dart';
 import 'package:safety/functions.dart';
-import 'package:safety/main.dart';
 
 class SetTheme extends StatefulWidget {
   @override

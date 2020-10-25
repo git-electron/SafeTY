@@ -2,13 +2,11 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:circular_reveal_animation/circular_reveal_animation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:safety/Cloud/auth.dart';
-import 'package:safety/Cloud/cloud.dart';
 import 'package:safety/Database/DBHelper.dart';
 import 'package:safety/Database/password.dart';
 
@@ -20,7 +18,6 @@ import 'package:safety/Settings/settings.dart';
 import 'package:safety/Settings/themes.dart';
 import 'package:safety/Settings/texts.dart';
 import 'package:safety/Utils/fieldFocusChange.dart';
-import 'package:safety/Utils/generator.dart';
 import 'package:safety/custom_icons_icons.dart';
 import 'package:safety/functions.dart';
 
@@ -95,9 +92,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   Color color2 = Colors.white;
 
   var db = DBHelper();
-
-  final AuthService _auth = AuthService();
-  final DatabaseService _database = DatabaseService();
 
   FToast fToast;
 
@@ -679,6 +673,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     Size size1 = MediaQuery.of(context).size;
 
     return WillPopScope(

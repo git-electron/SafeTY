@@ -8,7 +8,6 @@ import 'package:safety/Settings/themes.dart';
 import 'package:safety/Utils/generator.dart';
 import 'package:safety/custom_icons_icons.dart';
 import 'package:safety/functions.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class PasswordGenerator extends StatefulWidget {
   createState() => PasswordGeneratorState();

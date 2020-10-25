@@ -8,13 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:flutter_string_encryption/flutter_string_encryption.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:safety/Database/DBHelper.dart';
 import 'package:safety/Database/password.dart';
 import 'package:safety/Settings/texts.dart';
 import 'package:safety/Cloud/auth.dart';
-import 'package:safety/Cloud/models/user.dart';
 import 'package:safety/Cloud/cloud.dart';
 
 import 'package:safety/Settings/themes.dart';
@@ -94,7 +92,6 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
   Color topRightColor2 = topRightColor[1];
 
   String text = '';
-  String logs = '';
 
   int t = 0;
 
@@ -794,57 +791,21 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
     User user = await _auth.getUser();
 
     try {
-      try {
-        DocumentSnapshot document = await _database.getUserData(user.uid);
-        print('document got successfully: ${document.id}');
-      } catch(e) {
-        print(e);
-        setState(() {
-          logs = 'An exception when getting a document: ${e.toString()}';
-          loading2 = false;
-          bottomLeftColor2 = topRightColor[2];
-        });
-      }
       DocumentSnapshot doc = await _database.getUserData(user.uid);
-      print('doc:' + doc.toString());
-
-      try {
-        List<dynamic> field = doc.get('devices');
-        print('field got successfully: ${field.length}');
-      } catch(e) {
-        print(e);
-        setState(() {
-          logs = 'An exception when getting a field: ${e.toString()}';
-          loading2 = false;
-          bottomLeftColor2 = topRightColor[2];
-        });
-      }
-
       List<dynamic> devices = doc.get('devices');
-      print('field:' + devices.toString());
-
       List passwordsFromDB = [];
 
       print(devices);
 
-      setState(() {
-        bottomLeftColor1 = Colors.black;
-      });
-
       db.getPass().then((value) {
         setState(() {
           passwordsFromDB = value;
-            bottomLeftColor1 = Colors.deepOrangeAccent;
         });
 
         while (deviceIndex < devices.length) {
           int passwordIndex = 0;
 
           List<dynamic> passwords = doc.get('${devices[deviceIndex]}');
-
-          setState(() {
-            bottomLeftColor1 = Colors.white;
-          });
 
           while (passwordIndex < passwords.length) {
             bool similar = false;
@@ -923,7 +884,6 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
     } catch (e) {
       print(e);
       setState(() {
-        logs = e.toString();
         loading2 = false;
         bottomLeftColor2 = topRightColor[2];
       });
@@ -1966,6 +1926,9 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           color3 = Colors.white;
 
                           text = '';
+
+                          FocusScopeNode currentFocus = FocusScope.of(context);
+                          currentFocus.unfocus();
                         });
                       } else {
                         Future.delayed(Duration(milliseconds: 300), () {
@@ -2030,6 +1993,9 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           color3 = Colors.white;
 
                           text = '';
+
+                          FocusScopeNode currentFocus = FocusScope.of(context);
+                          currentFocus.unfocus();
                         });
                       } else {
                         Future.delayed(Duration(milliseconds: 300), () {
@@ -2461,6 +2427,9 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           color3 = Colors.white;
 
                           text = '';
+
+                          FocusScopeNode currentFocus = FocusScope.of(context);
+                          currentFocus.unfocus();
                         });
                       } else {
                         Future.delayed(Duration(milliseconds: 300), () {
@@ -2525,6 +2494,9 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           color3 = Colors.white;
 
                           text = '';
+
+                          FocusScopeNode currentFocus = FocusScope.of(context);
+                          currentFocus.unfocus();
                         });
                       } else {
                         Future.delayed(Duration(milliseconds: 300), () {
@@ -3370,7 +3342,6 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                                   height: size.height * 0.28,
                                   width: size1.width,
                                   alignment: Alignment.center,
-                                    child: Text(logs)
                                 ),
                               ),
                             ),

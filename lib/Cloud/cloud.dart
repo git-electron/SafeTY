@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:safety/Database/password.dart';
 
 class DatabaseService {
   final String uid;
@@ -16,8 +15,7 @@ class DatabaseService {
   }
 
   Future getUserData(id) async {
-    DocumentSnapshot doc = await usersCollection.doc(id).get();
-    return doc;
+    return await usersCollection.doc(id).get();
   }
 
   Stream<QuerySnapshot> get users {
