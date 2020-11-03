@@ -92,3 +92,4 @@ var buttonBgColor = [
   Colors.white.withOpacity(0.1)
 ];
 var blackWhiteColor = [Colors.black, Colors.white];
+var searchColor = [Colors.white, Color.fromRGBO(30, 30, 30, 1)];

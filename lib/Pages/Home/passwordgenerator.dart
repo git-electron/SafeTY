@@ -396,9 +396,7 @@ class PasswordGeneratorState extends State<PasswordGenerator>
                   Expanded(
                     child: SliderTheme(
                       data: SliderThemeData(
-                          trackHeight: size.height * 0.02,
-                          tickMarkShape: SliderTickMarkShape.noTickMark,
-                          thumbShape: SliderComponentShape.noThumb,
+                          trackHeight: size.height * 0.022,
                           trackShape: RoundedRectSliderTrackShape(),
                           rangeTrackShape: RoundedRectRangeSliderTrackShape()),
                       child: Slider(
@@ -409,8 +407,7 @@ class PasswordGeneratorState extends State<PasswordGenerator>
                         divisions: 100,
                         min: 8.0,
                         max: 100.0,
-                        activeColor: blackWhiteColor[dark]
-                            .withOpacity((dark == 1) ? 1 : 0.6),
+                        activeColor: (dark == 1) ? blackWhiteColor[dark] : Color.fromRGBO(60, 60, 60, 1),
                         inactiveColor: blackWhiteColor[dark].withOpacity(0.2),
                       ),
                     ),

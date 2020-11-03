@@ -1000,17 +1000,22 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                   alignment: Alignment.center,
                   child: GestureDetector(
                     onTap: () {
-                      setState(() {
-                        pressed1 = true;
-
-                        themeSelect = !themeSelect;
-                      });
 
                       if (selection) {
                         setState(() {
                           selection = false;
+                          pressed1 = true;
+                        });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            themeSelect = !themeSelect;
+                          });
                         });
                       } else {
+                        setState(() {
+                          themeSelect = !themeSelect;
+                          pressed1 = true;
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             selection = true;
@@ -1035,17 +1040,22 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       });
                     },
                     onLongPressEnd: (details) {
-                      setState(() {
-                        pressed1 = true;
-
-                        themeSelect = !themeSelect;
-                      });
 
                       if (selection) {
                         setState(() {
                           selection = false;
+                          pressed1 = true;
+                        });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            themeSelect = !themeSelect;
+                          });
                         });
                       } else {
+                        setState(() {
+                          pressed1 = true;
+                          themeSelect = !themeSelect;
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             selection = true;
@@ -1063,7 +1073,9 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       duration: Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                       height: themeSelect
-                          ? size.height * 0.6
+                          ? (pressed1
+                          ? size.height * 0.6 - size.width * 0.02
+                          : size.height * 0.6)
                           : (pressed1
                               ? size.height * 0.1 - size.width * 0.02
                               : size.height * 0.1),
@@ -1558,17 +1570,22 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                   alignment: Alignment.center,
                   child: GestureDetector(
                     onTap: () {
-                      setState(() {
-                        pressed3 = true;
-
-                        languageSelect = !languageSelect;
-                      });
 
                       if (langSelection) {
                         setState(() {
                           langSelection = false;
+                          pressed3 = true;
+                        });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            languageSelect = !languageSelect;
+                          });
                         });
                       } else {
+                        setState(() {
+                          languageSelect = !languageSelect;
+                          pressed3 = true;
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             langSelection = true;
@@ -1581,6 +1598,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           pressed3 = false;
                         });
                       });
+
                     },
                     onTapDown: (details) {
                       setState(() {
@@ -1593,17 +1611,22 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       });
                     },
                     onLongPressEnd: (details) {
-                      setState(() {
-                        pressed3 = true;
-
-                        languageSelect = !languageSelect;
-                      });
 
                       if (langSelection) {
                         setState(() {
                           langSelection = false;
+                          pressed3 = true;
+                        });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            languageSelect = !languageSelect;
+                          });
                         });
                       } else {
+                        setState(() {
+                          languageSelect = !languageSelect;
+                          pressed3 = true;
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             langSelection = true;
@@ -1621,7 +1644,9 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       duration: Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                       height: languageSelect
-                          ? size.height * 0.45
+                          ? (pressed3
+                          ? size.height * 0.45 - size.width * 0.02
+                          : size.height * 0.45)
                           : (pressed3
                               ? size.height * 0.1 - size.width * 0.02
                               : size.height * 0.1),
@@ -1676,7 +1701,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                               curve: Curves.easeInOut,
                               height: languageSelect ? size.height * 0.3 : 0,
                               child: AnimatedOpacity(
-                                duration: Duration(milliseconds: 500),
+                                duration: Duration(milliseconds: 300),
                                 opacity: langSelection ? 1 : 0,
                                 child: Container(
                                   height: size.height * 0.28,
@@ -1890,30 +1915,11 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                   alignment: Alignment.center,
                   child: GestureDetector(
                     onTap: () {
-                      setState(() {
-                        pressed4 = true;
-
-                        changeMail = !changeMail;
-
-                        changePass = false;
-                        passChanging = false;
-
-                        active1 = false;
-                        width1 = size.width * 0.75;
-                        color1 = Colors.white;
-                        active2 = false;
-                        width2 = size.width * 0.75;
-                        color2 = Colors.white;
-                        active3 = false;
-                        width3 = size.width * 0.75;
-                        color3 = Colors.white;
-
-                        text = '';
-                      });
 
                       if (mailChanging) {
                         setState(() {
                           mailChanging = false;
+                          pressed4 = true;
 
                           active1 = false;
                           width1 = size.width * 0.75;
@@ -1930,7 +1936,31 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           FocusScopeNode currentFocus = FocusScope.of(context);
                           currentFocus.unfocus();
                         });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            changeMail = !changeMail;
+                          });
+                        });
                       } else {
+                        setState(() {
+                          changeMail = !changeMail;
+                          pressed4 = true;
+
+                          changePass = false;
+                          passChanging = false;
+
+                          active1 = false;
+                          width1 = size.width * 0.75;
+                          color1 = Colors.white;
+                          active2 = false;
+                          width2 = size.width * 0.75;
+                          color2 = Colors.white;
+                          active3 = false;
+                          width3 = size.width * 0.75;
+                          color3 = Colors.white;
+
+                          text = '';
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             mailChanging = true;
@@ -1943,6 +1973,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           pressed4 = false;
                         });
                       });
+
                     },
                     onTapDown: (details) {
                       if (!mailChanging) {
@@ -1957,30 +1988,11 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       });
                     },
                     onLongPressEnd: (details) {
-                      setState(() {
-                        pressed4 = true;
-
-                        changeMail = !changeMail;
-
-                        changePass = false;
-                        passChanging = false;
-
-                        active1 = false;
-                        width1 = size.width * 0.75;
-                        color1 = Colors.white;
-                        active2 = false;
-                        width2 = size.width * 0.75;
-                        color2 = Colors.white;
-                        active3 = false;
-                        width3 = size.width * 0.75;
-                        color3 = Colors.white;
-
-                        text = '';
-                      });
 
                       if (mailChanging) {
                         setState(() {
                           mailChanging = false;
+                          pressed4 = true;
 
                           active1 = false;
                           width1 = size.width * 0.75;
@@ -1997,7 +2009,31 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           FocusScopeNode currentFocus = FocusScope.of(context);
                           currentFocus.unfocus();
                         });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            changeMail = !changeMail;
+                          });
+                        });
                       } else {
+                        setState(() {
+                          changeMail = !changeMail;
+                          pressed4 = true;
+
+                          changePass = false;
+                          passChanging = false;
+
+                          active1 = false;
+                          width1 = size.width * 0.75;
+                          color1 = Colors.white;
+                          active2 = false;
+                          width2 = size.width * 0.75;
+                          color2 = Colors.white;
+                          active3 = false;
+                          width3 = size.width * 0.75;
+                          color3 = Colors.white;
+
+                          text = '';
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             mailChanging = true;
@@ -2010,12 +2046,15 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           pressed4 = false;
                         });
                       });
+
                     },
                     child: AnimatedContainer(
                       duration: Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                       height: changeMail
-                          ? size.height * 0.7
+                          ? (pressed4
+                          ? size.height * 0.7 - size.width * 0.02
+                          : size.height * 0.7)
                           : (pressed4
                               ? size.height * 0.1 - size.width * 0.02
                               : size.height * 0.1),
@@ -2065,7 +2104,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                               curve: Curves.easeInOut,
                               height: changeMail ? size.height * 0.6 : 0,
                               child: AnimatedOpacity(
-                                duration: Duration(milliseconds: 500),
+                                duration: Duration(milliseconds: 300),
                                 opacity: mailChanging ? 1 : 0,
                                 child: Container(
                                   height: size.height * 0.55,
@@ -2391,30 +2430,11 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                   alignment: Alignment.center,
                   child: GestureDetector(
                     onTap: () {
-                      setState(() {
-                        pressed5 = true;
-
-                        changePass = !changePass;
-
-                        changeMail = false;
-                        mailChanging = false;
-
-                        active1 = false;
-                        width1 = size.width * 0.75;
-                        color1 = Colors.white;
-                        active2 = false;
-                        width2 = size.width * 0.75;
-                        color2 = Colors.white;
-                        active3 = false;
-                        width3 = size.width * 0.75;
-                        color3 = Colors.white;
-
-                        text = '';
-                      });
 
                       if (passChanging) {
                         setState(() {
                           passChanging = false;
+                          pressed5 = true;
 
                           active1 = false;
                           width1 = size.width * 0.75;
@@ -2431,7 +2451,31 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           FocusScopeNode currentFocus = FocusScope.of(context);
                           currentFocus.unfocus();
                         });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            changePass = !changePass;
+                          });
+                        });
                       } else {
+                        setState(() {
+                          changePass = !changePass;
+                          pressed5 = true;
+
+                          changeMail = false;
+                          mailChanging = false;
+
+                          active1 = false;
+                          width1 = size.width * 0.75;
+                          color1 = Colors.white;
+                          active2 = false;
+                          width2 = size.width * 0.75;
+                          color2 = Colors.white;
+                          active3 = false;
+                          width3 = size.width * 0.75;
+                          color3 = Colors.white;
+
+                          text = '';
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             passChanging = true;
@@ -2444,6 +2488,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           pressed5 = false;
                         });
                       });
+
                     },
                     onTapDown: (details) {
                       if (!passChanging) {
@@ -2458,30 +2503,11 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       });
                     },
                     onLongPressEnd: (details) {
-                      setState(() {
-                        pressed5 = true;
-
-                        changePass = !changePass;
-
-                        changeMail = false;
-                        mailChanging = false;
-
-                        active1 = false;
-                        width1 = size.width * 0.75;
-                        color1 = Colors.white;
-                        active2 = false;
-                        width2 = size.width * 0.75;
-                        color2 = Colors.white;
-                        active3 = false;
-                        width3 = size.width * 0.75;
-                        color3 = Colors.white;
-
-                        text = '';
-                      });
 
                       if (passChanging) {
                         setState(() {
                           passChanging = false;
+                          pressed5 = true;
 
                           active1 = false;
                           width1 = size.width * 0.75;
@@ -2498,7 +2524,31 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           FocusScopeNode currentFocus = FocusScope.of(context);
                           currentFocus.unfocus();
                         });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            changePass = !changePass;
+                          });
+                        });
                       } else {
+                        setState(() {
+                          changePass = !changePass;
+                          pressed5 = true;
+
+                          changeMail = false;
+                          mailChanging = false;
+
+                          active1 = false;
+                          width1 = size.width * 0.75;
+                          color1 = Colors.white;
+                          active2 = false;
+                          width2 = size.width * 0.75;
+                          color2 = Colors.white;
+                          active3 = false;
+                          width3 = size.width * 0.75;
+                          color3 = Colors.white;
+
+                          text = '';
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             passChanging = true;
@@ -2511,12 +2561,15 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           pressed5 = false;
                         });
                       });
+
                     },
                     child: AnimatedContainer(
                       duration: Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                       height: changePass
-                          ? size.height * 0.8
+                          ? (pressed5
+                          ? size.height * 0.8 - size.width * 0.02
+                          : size.height * 0.8)
                           : (pressed5
                               ? size.height * 0.1 - size.width * 0.02
                               : size.height * 0.1),
@@ -2566,7 +2619,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                               curve: Curves.easeInOut,
                               height: changePass ? size.height * 0.7 : 0,
                               child: AnimatedOpacity(
-                                duration: Duration(milliseconds: 500),
+                                duration: Duration(milliseconds: 300),
                                 opacity: passChanging ? 1 : 0,
                                 child: Container(
                                   height: size.height * 0.65,
@@ -3218,17 +3271,22 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                   alignment: Alignment.center,
                   child: GestureDetector(
                     onTap: () {
-                      setState(() {
-                        pressed9 = true;
-
-                        donateWindow = !donateWindow;
-                      });
 
                       if (donating) {
                         setState(() {
                           donating = false;
+                          pressed9 = true;
+                        });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            donateWindow = !donateWindow;
+                          });
                         });
                       } else {
+                        setState(() {
+                          donateWindow = !donateWindow;
+                          pressed9 = true;
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             donating = true;
@@ -3241,6 +3299,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           pressed9 = false;
                         });
                       });
+
                     },
                     onTapDown: (details) {
                       if (!donating) {
@@ -3255,17 +3314,22 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       });
                     },
                     onLongPressEnd: (details) {
-                      setState(() {
-                        pressed9 = true;
-
-                        donateWindow = !donateWindow;
-                      });
 
                       if (donating) {
                         setState(() {
                           donating = false;
+                          pressed9 = true;
+                        });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            donateWindow = !donateWindow;
+                          });
                         });
                       } else {
+                        setState(() {
+                          donateWindow = !donateWindow;
+                          pressed9 = true;
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             donating = true;
@@ -3278,12 +3342,15 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           pressed9 = false;
                         });
                       });
+
                     },
                     child: AnimatedContainer(
                       duration: Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                       height: donateWindow
-                          ? size.height * 0.45
+                          ? (pressed9
+                          ? size.height * 0.45 - size.width * 0.02
+                          : size.height * 0.45)
                           : (pressed9
                               ? size.height * 0.1 - size.width * 0.02
                               : size.height * 0.1),
@@ -3336,7 +3403,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                               curve: Curves.easeInOut,
                               height: donateWindow ? size.height * 0.3 : 0,
                               child: AnimatedOpacity(
-                                duration: Duration(milliseconds: 500),
+                                duration: Duration(milliseconds: 300),
                                 opacity: donating ? 1 : 0,
                                 child: Container(
                                   height: size.height * 0.28,
@@ -3358,17 +3425,22 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                   alignment: Alignment.center,
                   child: GestureDetector(
                     onTap: () {
-                      setState(() {
-                        pressed10 = true;
-
-                        aboutWindow = !aboutWindow;
-                      });
 
                       if (aboutInfo) {
                         setState(() {
                           aboutInfo = false;
+                          pressed10 = true;
+                        });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            aboutWindow = !aboutWindow;
+                          });
                         });
                       } else {
+                        setState(() {
+                          aboutWindow = !aboutWindow;
+                          pressed10 = true;
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             aboutInfo = true;
@@ -3381,6 +3453,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           pressed10 = false;
                         });
                       });
+
                     },
                     onTapDown: (details) {
                       if (!aboutInfo) {
@@ -3395,17 +3468,22 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                       });
                     },
                     onLongPressEnd: (details) {
-                      setState(() {
-                        pressed10 = true;
-
-                        aboutWindow = !aboutWindow;
-                      });
 
                       if (aboutInfo) {
                         setState(() {
                           aboutInfo = false;
+                          pressed10 = true;
+                        });
+                        Future.delayed(Duration(milliseconds: 300), (){
+                          setState((){
+                            aboutWindow = !aboutWindow;
+                          });
                         });
                       } else {
+                        setState(() {
+                          aboutWindow = !aboutWindow;
+                          pressed10 = true;
+                        });
                         Future.delayed(Duration(milliseconds: 300), () {
                           setState(() {
                             aboutInfo = true;
@@ -3418,6 +3496,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                           pressed10 = false;
                         });
                       });
+
                     },
                     child: AnimatedContainer(
                       duration: Duration(milliseconds: 300),
@@ -3476,7 +3555,7 @@ class _SettingsState extends State<Settings> with TickerProviderStateMixin {
                               curve: Curves.easeInOut,
                               height: aboutWindow ? size.height * 0.9 : 0,
                               child: AnimatedOpacity(
-                                duration: Duration(milliseconds: 500),
+                                duration: Duration(milliseconds: 300),
                                 opacity: aboutInfo ? 1 : 0,
                                 child: Container(
                                   height: size.height * 0.9,

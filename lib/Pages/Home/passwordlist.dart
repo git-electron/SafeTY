@@ -118,7 +118,8 @@ class _PasswordListState extends State<PasswordList> {
                                 .headline2
                                 .copyWith(
                                   color: Colors.white,
-                                  fontSize: ScreenUtil().setSp(size.width * 0.076),
+                                  fontSize:
+                                      ScreenUtil().setSp(size.width * 0.076),
                                 ),
                           )),
                       search
@@ -158,12 +159,12 @@ class _PasswordListState extends State<PasswordList> {
                           left: size.width * 0.04,
                           right: search ? size.width * 0.04 : 0),
                       decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: searchColor[dark],
                           borderRadius:
                               BorderRadius.circular(size.height * 0.035),
                           boxShadow: [
                             BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: blackWhiteColor[dark].withOpacity(0.2),
                                 blurRadius: 25,
                                 spreadRadius: 5,
                                 offset: Offset(0, 10))
@@ -174,7 +175,8 @@ class _PasswordListState extends State<PasswordList> {
                         children: <Widget>[
                           AnimatedContainer(
                             alignment: Alignment.centerLeft,
-                            duration: Duration(milliseconds: 100),
+                            duration: Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
                             height: size.height * 0.07,
                             width: search ? size.width * 0.75 : 0,
                             child: TextField(
@@ -191,22 +193,25 @@ class _PasswordListState extends State<PasswordList> {
                                   .primaryTextTheme
                                   .headline2
                                   .copyWith(
-                                      fontSize: ScreenUtil().setSp(size.width * 0.057),
-                                      color: Colors.black.withOpacity(0.6)),
-                              cursorColor: Colors.black12,
+                                      fontSize: ScreenUtil()
+                                          .setSp(size.width * 0.057),
+                                      color: blackWhiteColor[dark]
+                                          .withOpacity(0.6)),
+                              cursorColor: (dark == 0)
+                                  ? Colors.black12
+                                  : Color.fromRGBO(60, 60, 60, 1),
                               textInputAction: TextInputAction.search,
                               decoration: InputDecoration(
                                   border: InputBorder.none,
-                                  focusColor: Colors.black,
-                                  fillColor: Colors.black12,
                                   hintText: searchField[lang],
                                   hintStyle: Theme.of(context)
                                       .primaryTextTheme
                                       .headline2
                                       .copyWith(
-                                          fontSize: ScreenUtil().setSp(size.width * 0.057),
-                                          color:
-                                              Colors.black.withOpacity(0.4))),
+                                          fontSize: ScreenUtil()
+                                              .setSp(size.width * 0.057),
+                                          color: blackWhiteColor[dark]
+                                              .withOpacity(0.4))),
                             ),
                           ),
                           search
@@ -262,7 +267,8 @@ class _PasswordListState extends State<PasswordList> {
                             .primaryTextTheme
                             .headline2
                             .copyWith(
-                                fontSize: ScreenUtil().setSp(size.width * 0.051),
+                                fontSize:
+                                    ScreenUtil().setSp(size.width * 0.051),
                                 color: blackWhiteColor[dark].withOpacity(0.5)),
                       ),
                     ),
@@ -289,8 +295,10 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
   bool delete = false;
   bool opacity = false;
 
+  bool duration = true;
+
   List<double> widths = [];
-  List<Color> colors = [];
+  List<double> heights = [];
 
   Animation<double> widthAnimation;
   AnimationController widthAnimationController;
@@ -305,7 +313,7 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
     });
 
     addWidths();
-    addColors();
+    addHeights();
 
     widthAnimation =
         Tween<double>(begin: 0, end: 1).animate(widthAnimationController);
@@ -316,8 +324,8 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
       if (widget.passdata.length >= widths.length) {
         widths.add(0);
       }
-      if (widget.passdata.length >= colors.length) {
-        colors.add(Colors.redAccent);
+      if (widget.passdata.length >= heights.length) {
+        heights.add(size.height * 0.1);
       }
     });
   }
@@ -333,15 +341,15 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
     print(widths);
   }
 
-  void addColors() {
+  void addHeights() {
     int i = 0;
 
     while (i <= widget.passdata.length) {
-      colors.add(Colors.redAccent);
+      heights.add(size.height * 0.1);
 
       i++;
     }
-    print(colors);
+    print(heights);
   }
 
   var db = DBHelper();
@@ -362,7 +370,7 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
           itemBuilder: (BuildContext context, int i) {
             return GestureDetector(
               onTap: () {
-                if(!delete){
+                if (!delete) {
                   setState(() {
                     passData = widget.passdata[i];
 
@@ -375,12 +383,12 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                 }
               },
               child: AnimatedContainer(
-                duration: Duration(milliseconds: 300),
+                duration: Duration(milliseconds: duration ? 300 : 0),
                 curve: Curves.easeInOut,
                 height: (widget.passdata[i].title
                         .toLowerCase()
                         .contains(searchData.toLowerCase()))
-                    ? size.height * 0.1
+                    ? heights[i]
                     : 0,
                 width: size1.width,
                 child: Stack(
@@ -390,7 +398,7 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                       duration: Duration(milliseconds: 300),
                       height: size.height * 0.1,
                       width: size1.width,
-                      color: colors[i],
+                      color: Colors.redAccent,
                       child: DragTarget(
                         builder:
                             (context, List<int> candidateData, rejectedData) {
@@ -401,7 +409,7 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                         },
                         onAccept: (data) {
                           if (data == 1) {
-                            print('true');
+                            print('a');
                             print(deleteIndex);
 
                             if (deleteIndex >= 0) {
@@ -482,8 +490,7 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                         children: [
                           AnimatedOpacity(
                             duration: Duration(
-                                milliseconds:
-                                    (colors[i] == Colors.white) ? 0 : 300),
+                                milliseconds: (heights[i] == 0) ? 0 : 300),
                             opacity: opacity ? 1 : 0,
                             child: Container(
                               width: size.width * 0.9,
@@ -499,7 +506,9 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                                     style: Theme.of(context)
                                         .primaryTextTheme
                                         .headline2
-                                        .copyWith(fontSize: ScreenUtil().setSp(size.width * 0.042)),
+                                        .copyWith(
+                                            fontSize: ScreenUtil()
+                                                .setSp(size.width * 0.042)),
                                   ),
                                   SizedBox(
                                     width: size.width * 0.06,
@@ -551,29 +560,48 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                                       print('deleted');
 
                                       setState(() {
-                                        colors[i] =
-                                            bgColor[dark];
+                                        heights[i] = 0;
                                       });
 
-                                      setState(() {
-                                        widths[i] =
-                                            widthAnimationController.value *
-                                                size1.width;
-                                      });
+                                      int length = 0;
 
-                                      Future.delayed(
-                                          Duration(milliseconds: 300), () {
+                                      db.getPass().then((value) {
                                         setState(() {
-                                          widths[i] = 0;
-                                          colors[i] = Colors.redAccent;
-                                          delete = false;
-                                          deleteIndex = -1;
+                                          length = value.length;
                                         });
                                       });
 
                                       Future.delayed(
                                           Duration(milliseconds: 200), () {
                                         db.deletePass(widget.passdata[i]);
+                                      });
+
+                                      Timer.periodic(Duration(milliseconds: 50),
+                                          (timer) {
+                                        db.getPass().then((value) {
+                                          if (value.length < length) {
+                                            timer.cancel();
+
+                                            setState(() {
+                                              duration = false;
+                                            });
+
+                                            Future.delayed(Duration(milliseconds: 300), (){
+                                              setState(() {
+                                                widths[i] = 0;
+                                                heights[i] = size.height * 0.1;
+                                                delete = false;
+                                                deleteIndex = -1;
+                                              });
+                                            });
+
+                                            Future.delayed(Duration(milliseconds: 500), (){
+                                              setState(() {
+                                                duration = true;
+                                              });
+                                            });
+                                          }
+                                        });
                                       });
 
                                       Future.delayed(
@@ -616,8 +644,10 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-                    Positioned(
+                    AnimatedPositioned(
                       left: widths[i],
+                      duration: Duration(milliseconds: duration ? 200 : 0),
+                      curve: Curves.easeInOut,
                       child: Draggable(
                         dragAnchor: DragAnchor.child,
                         feedbackOffset: Offset(100, 0),
@@ -627,17 +657,28 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                         axis: Axis.horizontal,
                         childWhenDragging: Container(
                           height: size.height * 0.1,
-                          width: size1.width,
+                          width: size1.width * 3,
                           child: DragTarget(
                             builder: (context, List<int> candidateData,
                                 rejectedData) {
                               return null;
                             },
-                            onWillAccept: (data) {
-                              return true;
+                            onMove: (details) {
+                              setState(() {
+                                widths[i] = details.offset.dx;
+                              });
                             },
-                            onAccept: (data) {
-                              if (data == 1) {
+                            onLeave: (object) {
+                              setState(() {
+                                widths[i] = 0;
+                              });
+                            },
+                            onAcceptWithDetails: (details) {
+                              setState(() {
+                                widths[i] = details.offset.dx;
+                              });
+
+                              if (details.offset.dx > size.width * 0.08) {
                                 print('true');
                                 print(deleteIndex);
 
@@ -686,6 +727,17 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                                 }
                               } else {
                                 print('false');
+                                if (deleteIndex == i) {
+                                  setState(() {
+                                    delete = !delete;
+                                  });
+                                }
+                              }
+                              if (widths[i] != 0 &&
+                                  widths[i] != size.width * 0.25) {
+                                setState(() {
+                                  widths[i] = 0;
+                                });
                               }
                             },
                           ),
@@ -724,7 +776,8 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                                         .primaryTextTheme
                                         .headline2
                                         .copyWith(
-                                            fontSize: ScreenUtil().setSp(size.width * 0.065),
+                                            fontSize: ScreenUtil()
+                                                .setSp(size.width * 0.065),
                                             color: blackWhiteColor[dark]
                                                 .withOpacity(0.6)),
                                   ),
@@ -768,7 +821,8 @@ class _PassListState extends State<PassList> with TickerProviderStateMixin {
                                         .primaryTextTheme
                                         .headline2
                                         .copyWith(
-                                            fontSize: ScreenUtil().setSp(size.width * 0.065),
+                                            fontSize: ScreenUtil()
+                                                .setSp(size.width * 0.065),
                                             color: blackWhiteColor[dark]
                                                 .withOpacity(0.6)),
                                   ),
